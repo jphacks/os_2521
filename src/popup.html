@@ -1,0 +1,23 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Meet Multi-Video Tap</title>
+<style>
+  body{margin:12px;font:12px/1.4 system-ui, sans-serif;width:380px}
+  #controls{display:flex;gap:8px;margin-bottom:8px}
+  button{padding:6px 10px;border:none;border-radius:8px;cursor:pointer}
+  #start{background:#2e7d32;color:#fff}
+  #stop{background:#b71c1c;color:#fff}
+  #grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+  .cell{background:#111;border-radius:8px;padding:6px;color:#eee}
+  .cell img{width:100%;aspect-ratio:1/1;display:block;border-radius:6px;background:#000}
+  .cap{opacity:.8;margin-top:4px;font-size:11px}
+  #status{margin-top:8px;opacity:.8}
+</style>
+<div id="title" style="font-weight:600;margin-bottom:6px">Meet Multi-Video Tap</div>
+<div id="controls">
+  <button id="start">Start</button>
+  <button id="stop"  disabled>Stop</button>
+</div>
+<div id="grid"></div>
+<div id="status">idle</div>
+<script src="popup.js"></script>
