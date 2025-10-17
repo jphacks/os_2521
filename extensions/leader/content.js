@@ -1,6 +1,6 @@
 (() => {
   const SIZE = 224;
-  const FPS  = 4;               // ポップアップへ送る静止画は軽めでOK
+  const FPS = 4;               // ポップアップへ送る静止画は軽めでOK
   const MIN_VW = 200, MIN_VH = 150;
 
   // videoごとの描画ループ状態
@@ -22,7 +22,7 @@
     for (const root of walkShadow(document)) {
       if (root.querySelectorAll) root.querySelectorAll('video').forEach(v => arr.push(v));
     }
-    return arr.filter(v => (v.videoWidth|0)>=MIN_VW && (v.videoHeight|0)>=MIN_VH);
+    return arr.filter(v => (v.videoWidth | 0) >= MIN_VW && (v.videoHeight | 0) >= MIN_VH);
   }
 
   function startOne(videoEl, index) {
@@ -38,29 +38,24 @@
 
       if (ts - last >= minDt) {
         const vw = videoEl.videoWidth, vh = videoEl.videoHeight;
-        const s  = Math.min(SIZE/vw, SIZE/vh);
-        const dw = (vw*s)|0, dh = (vh*s)|0;
+        const s = Math.min(SIZE / vw, SIZE / vh);
+        const dw = (vw * s) | 0, dh = (vh * s) | 0;
         const dx = (SIZE - dw) >> 1, dy = (SIZE - dh) >> 1;
-        ctx.clearRect(0,0,SIZE,SIZE);
-        ctx.drawImage(videoEl, 0,0, vw, vh, dx, dy, dw, dh);
+        ctx.clearRect(0, 0, SIZE, SIZE);
+        ctx.drawImage(videoEl, 0, 0, vw, vh, dx, dy, dw, dh);
 
         // dataURLにしてポップアップへ送る（軽量プレビュー）
-        const blob = await canvas.convertToBlob({type:'image/jpeg', quality:0.7});
+        const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.7 });
         const dataUrl = await blobToDataURL(blob);
-        chrome.runtime.sendMessage({type:'FRAME', index, dataUrl, w: vw, h: vh});
+        chrome.runtime.sendMessage({ type: 'FRAME', index, dataUrl, w: vw, h: vh });
         last = ts;
       }
       videoEl.requestVideoFrameCallback(pushFrame);
     }
 
-    const kick = () => {
-      chrome.runtime.sendMessage({type:'STATUS', text:`capturing #${index} ${videoEl.videoWidth}x${videoEl.videoHeight}`});
-      videoEl.requestVideoFrameCallback(pushFrame);
-    };
-
     sessions.set(videoEl, { index, canvas, ctx });
     if (videoEl.readyState >= 2) kick();
-    else videoEl.addEventListener('loadeddata', kick, { once:true });
+    else videoEl.addEventListener('loadeddata', kick, { once: true });
   }
 
   function stopAll() {
@@ -72,14 +67,14 @@
 
   function scanAndAttachAll() {
     const vids = findCandidateVideos();
-    chrome.runtime.sendMessage({type:'VIDEOS_COUNT', count: vids.length});
+    chrome.runtime.sendMessage({ type: 'VIDEOS_COUNT', count: vids.length });
     vids.forEach((v, idx) => startOne(v, idx));
   }
 
   function enableDynamicAttach() {
     if (mo) return;
     mo = new MutationObserver(() => { if (running) scanAndAttachAll(); });
-    mo.observe(document.documentElement, { childList:true, subtree:true });
+    mo.observe(document.documentElement, { childList: true, subtree: true });
     // 初回
     scanAndAttachAll();
   }
@@ -92,18 +87,19 @@
     });
   }
 
+
   // ポップアップからの操作を受ける
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.cmd === 'START') {
       running = true;
       enableDynamicAttach();
-      chrome.runtime.sendMessage({type:'STATUS', text:'running…'});
+      chrome.runtime.sendMessage({ type: 'STATUS', text: 'running…' });
       sendResponse && sendResponse({});
       return true;
     }
     if (msg.cmd === 'STOP') {
       stopAll();
-      chrome.runtime.sendMessage({type:'STATUS', text:'stopped'});
+      chrome.runtime.sendMessage({ type: 'STATUS', text: 'stopped' });
       sendResponse && sendResponse({});
       return true;
     }

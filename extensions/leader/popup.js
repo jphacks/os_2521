@@ -1,12 +1,12 @@
 (async () => {
   const startBtn = document.getElementById('start');
-  const stopBtn  = document.getElementById('stop');
-  const grid     = document.getElementById('grid');
+  const stopBtn = document.getElementById('stop');
+  const grid = document.getElementById('grid');
   const statusEl = document.getElementById('status');
 
   // アクティブなタブ（Meet想定）を取得
   async function getActiveTab() {
-    const [tab] = await chrome.tabs.query({active:true, currentWindow:true});
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     return tab;
   }
 
@@ -16,9 +16,9 @@
       cell = document.createElement('div');
       cell.className = 'cell';
       cell.dataset.idx = idx;
-      const img  = document.createElement('img');
+      const img = document.createElement('img');
       img.alt = `#${idx}`;
-      const cap  = document.createElement('div');
+      const cap = document.createElement('div');
       cap.className = 'cap';
       cap.textContent = `#${idx}`;
       cell.appendChild(img);
@@ -35,18 +35,18 @@
       statusEl.textContent = 'このタブはGoogle Meetではありません';
       return;
     }
-    await chrome.tabs.sendMessage(tab.id, {cmd: 'START'});
+    await chrome.tabs.sendMessage(tab.id, { cmd: 'START' });
     startBtn.disabled = true;
-    stopBtn.disabled  = false;
+    stopBtn.disabled = false;
     statusEl.textContent = 'starting…';
   });
 
   // Stop
   stopBtn.addEventListener('click', async () => {
     const tab = await getActiveTab();
-    await chrome.tabs.sendMessage(tab.id, {cmd: 'STOP'});
+    await chrome.tabs.sendMessage(tab.id, { cmd: 'STOP' });
     startBtn.disabled = false;
-    stopBtn.disabled  = true;
+    stopBtn.disabled = true;
     grid.innerHTML = '';
     statusEl.textContent = 'stopped';
   });
@@ -61,8 +61,8 @@
       statusEl.textContent = `videos: ${msg.count}`;
     } else if (msg.type === 'FRAME') {
       const cell = ensureCell(msg.index);
-      const img  = cell.querySelector('img');
-      const cap  = cell.querySelector('.cap');
+      const img = cell.querySelector('img');
+      const cap = cell.querySelector('.cap');
       img.src = msg.dataUrl;  // サムネ（更新）
       cap.textContent = `#${msg.index} ${msg.w}x${msg.h}`;
     } else if (msg.type === 'STATUS') {
