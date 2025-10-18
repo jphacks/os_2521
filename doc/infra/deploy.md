@@ -1,6 +1,12 @@
-# FastAPI + Redis デプロイガイド（Railway無料版）
+# FastAPI + Redis + Socket.IO デプロイガイド（Railway無料版）
 
-このドキュメントでは、会議休憩管理システムのFastAPIサーバーとRedisを**Railway**を使って無料でデプロイする方法を説明します。
+このドキュメントでは、会議休憩管理システムのFastAPIサーバー、Socket.IO、Redisを**Railway**を使って無料でデプロイする方法を説明します。
+
+**システム構成**:
+- FastAPI（REST API + SSE + Socket.IO）
+- Redis（状態管理 + Pub/Sub）
+- Socket.IO（まばたき検知の双方向通信）
+- Polling transport（WebSocketは無効化）
 
 ## 目次
 
@@ -43,12 +49,24 @@ docker-compose down -v
 ```bash
 # ヘルスチェック
 curl http://localhost:8000/health
+# 期待される出力:
+# {"status":"healthy","redis":"connected","redis_config":{"host":"redis","port":6379}}
+
+# ルートエンドポイント
+curl http://localhost:8000/
+# 期待される出力:
+# {"service":"Meeting Rest System API","status":"running","version":"1.0.0",...}
 
 # APIドキュメント（Swagger UI）
 open http://localhost:8000/docs
 
 # Redisの状態確認
 docker-compose exec redis redis-cli ping
+# 期待される出力: PONG
+
+# Socket.IO接続テスト
+curl http://localhost:8000/socket.io/?EIO=4&transport=polling
+# 期待される出力: {"sid":"...","upgrades":[],"pingInterval":...}
 ```
 
 ---
@@ -114,9 +132,10 @@ railway up
 
 | 変数名 | 値 | 説明 |
 |--------|-----|------|
-| `PORT` | `8000` | APIサーバーのポート番号 |
-| `REDIS_HOST` | （Redisサービス名）| Redisの内部ホスト名 |
+| `PORT` | Railwayが自動設定 | APIサーバーのポート番号（設定不要） |
+| `REDIS_HOST` | `redis.railway.internal` | Redisの内部ホスト名 |
 | `REDIS_PORT` | `6379` | Redisのポート番号 |
+| `REDIS_PASSWORD` | （任意） | Redisにパスワードを設定した場合のみ |
 
 **Redisホスト名の取得方法**:
 1. 同じプロジェクト内のRedisサービスをクリック
@@ -127,12 +146,18 @@ railway up
 **注意**:
 - Redisを同じプロジェクト内に追加すると、自動的にPrivate Networkingが有効になります
 - `REDIS_URL` という環境変数が自動生成される場合もありますが、個別設定を推奨します
+- `PORT`環境変数はRailwayが自動的に設定するため、手動設定は不要です
+- Dockerfileで `${PORT:-8000}` を使用しているため、ローカル開発では8000番ポートが使用されます
 
 #### 5. デプロイ完了
 
 - Railway が自動的に Dockerfile を検出してビルド
+- `railway.json` の設定に基づいてデプロイされる
+  - ビルダー: Dockerfile
+  - 起動コマンド: `uvicorn main:socket_app --host 0.0.0.0 --port $PORT`
+  - 重要: `socket_app` を使用してSocket.IOサポートを有効化
 - デプロイ完了後、公開URLが発行される
-- 例: `https://meeting-rest-api-production.up.railway.app`
+- 例: `https://pure-elegance-production.up.railway.app`
 
 #### 6. デプロイURLを取得
 
@@ -172,22 +197,58 @@ railway open
 curl https://your-app.up.railway.app/health
 
 # 期待されるレスポンス:
-# {"status":"healthy","redis":"connected","timestamp":"..."}
+# {"status":"healthy","redis":"connected","redis_config":{"host":"redis.railway.internal","port":6379}}
+
+# ルートエンドポイント確認
+curl https://your-app.up.railway.app/
+
+# 期待されるレスポンス:
+# {"service":"Meeting Rest System API","status":"running","version":"1.0.0",...}
+
+# Socket.IO接続テスト
+curl https://your-app.up.railway.app/socket.io/?EIO=4&transport=polling
+
+# 期待されるレスポンス（Session IDが含まれる）:
+# 0{"sid":"xxx","upgrades":[],"pingInterval":25000,"pingTimeout":20000}
 
 # Swagger UIで確認（ブラウザで開く）
 open https://your-app.up.railway.app/docs
 ```
 
 **確認ポイント**:
-- `/health` エンドポイントが `{"status":"healthy"}` を返すこと
-- `redis` が `"connected"` になっていること
-- Swagger UI が正常に表示されること
+- ✅ `/health` エンドポイントが `{"status":"healthy","redis":"connected"}` を返すこと
+- ✅ `redis` が `"connected"` になっていること
+- ✅ Socket.IOエンドポイント（`/socket.io/`）が正常に応答すること
+- ✅ Swagger UI が正常に表示されること
+- ✅ ログに `✓ Redis connected` と表示されること
 
 ---
 
 ## デプロイ後の設定
 
 デプロイが完了したら、拡張機能とテストコンソールのAPI URLを変更する必要があります。
+
+### Leader拡張機能のAPI URL変更
+
+1. `extensions/leader/content.js` を開く
+2. `API_BASE_URL` と Socket.IO URLを変更:
+
+```javascript
+// 変更前
+const API_BASE_URL = 'http://localhost:8000';
+const socket = io('http://localhost:8000', {...});
+
+// 変更後（実際のRailway URLに置き換える）
+const API_BASE_URL = 'https://your-app.up.railway.app';
+const socket = io('https://your-app.up.railway.app', {
+  transports: ['polling'],
+  path: '/socket.io/'
+});
+```
+
+3. Chrome拡張機能を再読み込み:
+   - `chrome://extensions/` を開く
+   - Leader拡張機能の更新ボタン（回転矢印）をクリック
 
 ### Member拡張機能のAPI URL変更
 
@@ -217,11 +278,9 @@ const API_BASE_URL = 'https://your-app.up.railway.app';
 
 ### manifest.jsonの変更（重要）
 
-Member拡張機能がRailway URLにアクセスできるように権限を追加:
+Leader拡張機能とMember拡張機能がRailway URLにアクセスできるように権限を追加:
 
-1. `extensions/member/manifest.json` を開く
-2. `host_permissions` を更新:
-
+**Leader拡張機能（`extensions/leader/manifest.json`）**:
 ```json
 {
   "host_permissions": [
@@ -232,30 +291,48 @@ Member拡張機能がRailway URLにアクセスできるように権限を追加
 }
 ```
 
-3. 拡張機能を再読み込み
+**Member拡張機能（`extensions/member/manifest.json`）**:
+```json
+{
+  "host_permissions": [
+    "https://meet.google.com/*",
+    "http://localhost:8000/*",
+    "https://your-app.up.railway.app/*"
+  ]
+}
+```
+
+3. 両方の拡張機能を再読み込み
 
 ### 動作確認手順
 
-1. **テストコンソールで確認**:
-   - `test/index.html` を開く
-   - API URLをRailway URLに設定
+1. **Leader拡張機能でまばたき検知を確認**:
+   - Google Meetページを開く
+   - Leader拡張機能のポップアップを開く
    - Meeting ID: `test-123`
-   - 「計測開始」→「休憩トリガー」をクリック
+   - 「Start」ボタンをクリック
+   - ブラウザの開発者ツールを開いてログを確認:
+     - `✓ Socket.IO connected` が表示されること
+     - `[Blink Detection] 📹 参加者 1/N を検知中` が表示されること
+     - `[Blink Detection] 🔍 まばたき検知結果: ✓ 検知` または `✗ 未検知` が表示されること
 
-2. **Member拡張機能で確認**:
+2. **Member拡張機能で休憩通知を確認**:
    - Google Meetページを開く
    - Member拡張機能のポップアップを開く
    - Meeting ID: `test-123`
    - 「接続開始」をクリック
-   - テストコンソールで「休憩トリガー」をクリック
-   - オーバーレイUIが表示されることを確認
+   - Leader拡張機能でまばたきが少ない（1回以下）と判定された場合、自動的に休憩オーバーレイが表示されること
 
 3. **ログで確認**:
    ```bash
    railway logs --follow
    ```
-   - SSE接続のログが表示されること
-   - REST APIリクエストのログが表示されること
+   - Socket.IO接続のログ: `✓ Socket.IO client connected: <sid>`
+   - まばたき検知リクエスト: `✓ Received blink analysis request from <sid> for meeting test-123`
+   - まばたき結果送信: `✓ Sent blink result to <sid>: blink_detected=true/false`
+   - SSE接続のログ: `✓ SSE client connected: meeting_id=test-123`
+   - REST APIリクエスト: `POST /api/meetings/test-123/rest`
+   - Redis Pub/Sub配信: `✓ Bridged rest event to Socket.IO: test-123`
 
 ---
 
@@ -319,9 +396,36 @@ Railway Dashboard の Metrics タブで以下を確認できます:
 
 ## トラブルシューティング
 
-### 1. Redis接続エラー
+### 1. Socket.IO接続エラー（404 Not Found）
 
-**症状**: サーバーがRedisに接続できない
+**症状**: `GET https://your-app.up.railway.app/socket.io/?EIO=4&transport=polling 404 (Not Found)`
+
+**原因**: サーバーが `main:app` で起動されており、`main:socket_app` が使用されていない
+
+**対処法**:
+
+1. `railway.json` の `startCommand` を確認:
+   ```json
+   {
+     "deploy": {
+       "startCommand": "uvicorn main:socket_app --host 0.0.0.0 --port $PORT"
+     }
+   }
+   ```
+   **重要**: `main:app` ではなく `main:socket_app` を使用すること
+
+2. Dockerfileの `CMD` を確認:
+   ```dockerfile
+   CMD uvicorn main:socket_app --host 0.0.0.0 --port ${PORT:-8000}
+   ```
+
+3. Railway Dashboardでデプロイメントログを確認:
+   - `Serving on http://0.0.0.0:XXXX` が表示されること
+   - `Application startup complete` が表示されること
+
+### 2. Redis接続エラー
+
+**症状**: サーバーがRedisに接続できない（`{"status":"degraded","redis":"disconnected"}`）
 
 **対処法**:
 
@@ -334,11 +438,12 @@ railway variables
 ```
 
 **確認ポイント**:
-- `REDIS_HOST` が正しく設定されているか
+- `REDIS_HOST` が正しく設定されているか（例: `redis.railway.internal`）
 - Redisサービスが同じプロジェクト内にあるか
 - Private Networkingが有効になっているか
+- ヘルスチェックで `redis: "connected"` が表示されるか
 
-### 2. デプロイ失敗
+### 3. デプロイ失敗
 
 **症状**: ビルドやデプロイが失敗する
 
@@ -354,10 +459,12 @@ railway logs
 
 **よくある原因**:
 - `requirements.txt` に必要なパッケージが記載されていない
+  - 必須: `fastapi`, `uvicorn`, `redis`, `python-socketio`, `sse-starlette`
 - Dockerfileの設定が間違っている
-- Python バージョンの不一致
+  - `CMD` で `main:socket_app` を使用しているか確認
+- Python バージョンの不一致（Python 3.11推奨）
 
-### 3. メモリ不足
+### 4. メモリ不足
 
 **症状**: サーバーがクラッシュする、または応答が遅い
 
@@ -376,30 +483,39 @@ railway status
 - Redis接続プーリングを最適化
 - 必要に応じてプランをアップグレード
 
-### 4. 起動エラー
+### 5. 起動エラー（502 Bad Gateway）
 
-**症状**: デプロイは成功するが、サーバーが起動しない
+**症状**: デプロイは成功するが、サーバーが起動しない。`502 Bad Gateway` が表示される
+
+**原因**:
+- `PORT` 環境変数が正しく設定されていない
+- Dockerfileで `${PORT:-8000}` を使用していない
+- サーバーが `0.0.0.0` でリッスンしていない
 
 **対処法**:
 
-1. `PORT` 環境変数が設定されているか確認
-2. サーバーが `0.0.0.0` でリッスンしているか確認
-3. ヘルスチェックエンドポイント (`/health`) が正常に応答するか確認
+1. Dockerfileの `CMD` を確認:
+   ```dockerfile
+   CMD uvicorn main:socket_app --host 0.0.0.0 --port ${PORT:-8000}
+   ```
+   **重要**: `$PORT` の代わりに `${PORT:-8000}` を使用（デフォルト値付き）
 
-```python
-# main.py の確認ポイント
-import os
+2. `railway.json` の `startCommand` を確認:
+   ```json
+   {
+     "deploy": {
+       "startCommand": "uvicorn main:socket_app --host 0.0.0.0 --port $PORT"
+     }
+   }
+   ```
 
-port = int(os.getenv("PORT", 8000))
+3. Railway Dashboardでログを確認:
+   - `✓ Redis connected` が表示されること
+   - `Application startup complete` が表示されること
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=port)
-```
+### 6. CORS エラー
 
-### 5. CORS エラー
-
-**症状**: ブラウザから API にアクセスできない
+**症状**: ブラウザから API にアクセスできない。`Access to fetch at 'https://...' from origin '...' has been blocked by CORS policy`
 
 **対処法**:
 
@@ -413,6 +529,14 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+# Socket.IO CORSも確認
+sio = socketio.AsyncServer(
+    async_mode='asgi',
+    cors_allowed_origins='*',  # 全オリジン許可
+    logger=True,
+    engineio_logger=True
 )
 ```
 
@@ -464,11 +588,21 @@ jobs:
 
 ### デプロイの流れ
 
-1. Railway.app にサインアップ
-2. GitHubリポジトリを接続
-3. Redisサービスを追加
-4. 環境変数を設定
-5. デプロイ完了
+1. ✅ Railway.app にサインアップ
+2. ✅ GitHubリポジトリを接続
+3. ✅ Redisサービスを追加
+4. ✅ 環境変数を設定（`REDIS_HOST`, `REDIS_PORT`）
+5. ✅ `railway.json` で `socket_app` を指定
+6. ✅ Dockerfileで `${PORT:-8000}` を使用
+7. ✅ デプロイ完了
+
+### 重要なポイント
+
+- **Socket.IOサポート**: `uvicorn main:socket_app` を使用（`main:app` ではない）
+- **PORT環境変数**: Dockerfileで `${PORT:-8000}` を使用
+- **Transport**: Polling transport使用（WebSocketは無効化）
+- **CORS**: 全オリジン許可（`cors_allowed_origins='*'`）
+- **Redis接続**: Private Networking経由で接続
 
 ### 無料枠の制限
 
@@ -477,9 +611,19 @@ jobs:
 - ストレージ: 1GB
 - ネットワーク: 100GB/月
 
+### トラブルシューティングチェックリスト
+
+- [ ] `railway.json` で `main:socket_app` を使用しているか
+- [ ] Dockerfileで `${PORT:-8000}` を使用しているか
+- [ ] `/health` エンドポイントで `redis: "connected"` が表示されるか
+- [ ] Socket.IOエンドポイント（`/socket.io/`）が応答するか
+- [ ] Leader拡張機能でSocket.IO接続が成功するか
+- [ ] Member拡張機能でSSE接続が成功するか
+
 ### 参考リンク
 
 - Railway公式ドキュメント: https://docs.railway.app
 - Railway CLI リファレンス: https://docs.railway.app/develop/cli
 - FastAPI公式ドキュメント: https://fastapi.tiangolo.com
+- Socket.IO公式ドキュメント: https://socket.io/docs/v4/
 - Redis公式ドキュメント: https://redis.io/documentation

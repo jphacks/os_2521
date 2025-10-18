@@ -309,11 +309,15 @@ async def sse_events(meeting_id: str):
 
         except asyncio.CancelledError:
             print(f"✓ SSE client disconnected: meeting_id={meeting_id}")
-
+        except Exception as e:
+            print(f"✗ SSE error for meeting_id={meeting_id}: {e}")
         finally:
-            await pubsub.unsubscribe(f"meeting:{meeting_id}:rest")
-            await pubsub.close()
-            await pubsub_client.close()
+            try:
+                await pubsub.unsubscribe(f"meeting:{meeting_id}:rest")
+                await pubsub.close()
+                await pubsub_client.close()
+            except Exception as e:
+                print(f"✗ SSE cleanup error: {e}")
 
     return EventSourceResponse(event_generator())
 
@@ -452,12 +456,12 @@ async def bridge_rest_events_to_socketio():
     )
     pubsub = pubsub_client.pubsub()
 
-    # すべての休憩チャンネルを購読（パターンマッチ）
-    await pubsub.psubscribe('meeting:*:rest')
-
-    print("✓ Started bridging Redis events to Socket.IO")
-
     try:
+        # すべての休憩チャンネルを購読（パターンマッチ）
+        await pubsub.psubscribe('meeting:*:rest')
+
+        print("✓ Started bridging Redis events to Socket.IO")
+
         async for message in pubsub.listen():
             if message['type'] == 'pmessage':
                 # チャンネル名から meeting_id を抽出
@@ -470,15 +474,40 @@ async def bridge_rest_events_to_socketio():
                 # Socket.IOで配信
                 await sio.emit('rest_required', event_data, room=f'meeting:{meeting_id}')
                 print(f"✓ Bridged rest event to Socket.IO: {meeting_id}")
+    except asyncio.CancelledError:
+        print("✓ Bridge task cancelled")
+    except Exception as e:
+        print(f"✗ Bridge task error: {e}")
     finally:
-        await pubsub.close()
-        await pubsub_client.close()
+        try:
+            await pubsub.unsubscribe()
+            await pubsub.close()
+            await pubsub_client.close()
+        except Exception as e:
+            print(f"✗ Bridge cleanup error: {e}")
+
+
+# グローバル変数でタスクを管理
+bridge_task = None
 
 
 @app.on_event("startup")
 async def startup_bridge():
     """Redis→Socket.IOブリッジを起動"""
-    asyncio.create_task(bridge_rest_events_to_socketio())
+    global bridge_task
+    bridge_task = asyncio.create_task(bridge_rest_events_to_socketio())
+
+
+@app.on_event("shutdown")
+async def shutdown_bridge():
+    """Redis→Socket.IOブリッジを停止"""
+    global bridge_task
+    if bridge_task:
+        bridge_task.cancel()
+        try:
+            await bridge_task
+        except asyncio.CancelledError:
+            print("✓ Bridge task cancelled on shutdown")
 
 
 if __name__ == "__main__":
