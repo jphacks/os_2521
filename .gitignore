@@ -1,0 +1,9 @@
+server/__pycache__
+.env
+*.pyc
+__pycache__/
+node_modules/
+.DS_Store
+
+# 自動生成されるファイル
+extensions/member/config.js

@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "Meeting Rest Member",
+  "version": "1.0.0",
+  "description": "Google Meet会議中に休憩通知を受信してオーバーレイUIを表示します。",
+  "permissions": [
+    "activeTab",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://meet.google.com/*",
+    "http://localhost:8000/*",
+    "https://*.up.railway.app/*",
+    "https://*.railway.app/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "休憩通知システム - Member"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://meet.google.com/*"],
+      "js": ["config.js", "content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  }
+}

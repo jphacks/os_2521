@@ -1,0 +1,11 @@
+// このファイルは自動生成されます
+// 編集する場合は .env ファイルを変更して npm run build:config を実行してください
+
+// API設定
+const CONFIG = {
+  DEFAULT_API_URL: 'https://your-app.up.railway.app',
+  FALLBACK_API_URL: 'http://localhost:8000'
+};
+
+// 設定をグローバルに公開
+window.MEETING_REST_CONFIG = CONFIG;

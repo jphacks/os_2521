@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>休憩通知オーバーレイ</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      -webkit-app-region: no-drag;
+    }
+
+    /* デフォルトは透明 */
+    body {
+      background: transparent;
+    }
+
+    /* ページ情報表示エリア（右上） */
+    #page-info-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 15px 20px;
+      border-radius: 10px;
+      min-width: 300px;
+      max-width: 500px;
+      font-size: 14px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+      z-index: 9999;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    #page-info-container.visible {
+      opacity: 1;
+    }
+
+    #page-info-container h3 {
+      margin-bottom: 10px;
+      font-size: 16px;
+      color: #4fc3f7;
+    }
+
+    #page-info-container .info-row {
+      margin-bottom: 8px;
+      display: flex;
+      align-items: flex-start;
+    }
+
+    #page-info-container .info-label {
+      font-weight: bold;
+      min-width: 80px;
+      color: #aaa;
+    }
+
+    #page-info-container .info-value {
+      flex: 1;
+      word-break: break-word;
+    }
+
+    #page-info-container .timestamp {
+      margin-top: 10px;
+      font-size: 12px;
+      color: #888;
+      text-align: right;
+    }
+
+    /* 休憩通知オーバーレイ（全画面） */
+    #rest-notification {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.95);
+      z-index: 10000;
+      pointer-events: all;
+      animation: fadeIn 0.3s ease-in-out;
+    }
+
+    #rest-notification.visible {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #rest-content {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 80px 100px;
+      border-radius: 20px;
+      text-align: center;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7);
+      max-width: 700px;
+      animation: scaleIn 0.3s ease-out;
+    }
+
+    #rest-emoji {
+      font-size: 96px;
+      margin-bottom: 30px;
+      animation: bounce 2s infinite;
+    }
+
+    #rest-title {
+      font-size: 56px;
+      font-weight: 700;
+      color: white;
+      margin: 0 0 30px 0;
+      text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.4);
+    }
+
+    #rest-message {
+      font-size: 22px;
+      color: rgba(255, 255, 255, 0.95);
+      margin: 0 0 50px 0;
+      line-height: 1.8;
+    }
+
+    #rest-ok-btn {
+      background: white;
+      color: #667eea;
+      border: none;
+      padding: 20px 60px;
+      font-size: 20px;
+      font-weight: 700;
+      border-radius: 40px;
+      cursor: pointer;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+      transition: all 0.3s ease;
+    }
+
+    #rest-ok-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    /* アニメーション */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    @keyframes scaleIn {
+      from {
+        transform: scale(0.9);
+        opacity: 0;
+      }
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    @keyframes bounce {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-20px);
+      }
+    }
+
+    @keyframes slideInRight {
+      from {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes slideOutRight {
+      from {
+        transform: translateX(0);
+        opacity: 1;
+      }
+      to {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+    }
+
+    /* 休憩希望通知（トースト） */
+    #rest-request-toast {
+      position: fixed;
+      top: 100px;
+      right: 20px;
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      color: white;
+      padding: 16px 24px;
+      border-radius: 12px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+      z-index: 9998;
+      pointer-events: none;
+      font-size: 14px;
+      font-weight: 600;
+      max-width: 300px;
+      display: none;
+    }
+
+    #rest-request-toast.visible {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      animation: slideInRight 0.3s ease-out;
+    }
+
+    #rest-request-toast.hiding {
+      animation: slideOutRight 0.3s ease-in;
+    }
+
+    #rest-request-toast .emoji {
+      font-size: 24px;
+    }
+  </style>
+</head>
+<body>
+  <!-- ページ情報表示エリア -->
+  <div id="page-info-container">
+    <h3>📄 現在のページ情報</h3>
+    <div class="info-row">
+      <span class="info-label">タイトル:</span>
+      <span class="info-value" id="page-title">-</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">URL:</span>
+      <span class="info-value" id="page-url">-</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">会議ID:</span>
+      <span class="info-value" id="meeting-id">-</span>
+    </div>
+    <div class="timestamp" id="page-timestamp">-</div>
+  </div>
+
+  <!-- 休憩通知オーバーレイ -->
+  <div id="rest-notification">
+    <div id="rest-content">
+      <div id="rest-emoji">☕</div>
+      <h1 id="rest-title">休憩時間です</h1>
+      <p id="rest-message">少し休憩して、リフレッシュしましょう</p>
+      <button id="rest-ok-btn">OK</button>
+    </div>
+  </div>
+
+  <!-- 休憩希望トースト通知 -->
+  <div id="rest-request-toast">
+    <div class="emoji">💤</div>
+    <div id="rest-request-message">誰かが休憩を希望しています</div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

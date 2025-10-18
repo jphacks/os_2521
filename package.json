@@ -1,0 +1,27 @@
+{
+  "name": "meeting-rest-system",
+  "version": "1.0.0",
+  "description": "会議休憩管理システム",
+  "main": "overlay/main.js",
+  "scripts": {
+    "build:config": "node scripts/build-config.js",
+    "prebuild": "npm run build:config",
+    "start:overlay": "electron overlay/main.js",
+    "install:native-host": "node scripts/install-native-host.js",
+    "uninstall:native-host": "node scripts/install-native-host.js uninstall"
+  },
+  "keywords": [
+    "google-meet",
+    "chrome-extension",
+    "rest",
+    "break"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0"
+  },
+  "dependencies": {
+    "socket.io-client": "^4.6.1"
+  }
+}

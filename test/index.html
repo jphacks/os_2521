@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meeting Rest System - Test Console</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      padding: 40px;
+      max-width: 600px;
+      width: 100%;
+    }
+
+    h1 {
+      color: #667eea;
+      margin-bottom: 10px;
+      font-size: 32px;
+      font-weight: 700;
+    }
+
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+
+    .form-group {
+      margin-bottom: 25px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #333;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      font-size: 16px;
+      transition: all 0.3s ease;
+    }
+
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .button-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    button {
+      padding: 14px 24px;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      color: white;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-start {
+      background: linear-gradient(135deg, #2e7d32 0%, #43a047 100%);
+    }
+
+    .btn-rest {
+      background: linear-gradient(135deg, #f57c00 0%, #ff9800 100%);
+    }
+
+    .btn-end {
+      background: linear-gradient(135deg, #c62828 0%, #e53935 100%);
+    }
+
+    .btn-status {
+      background: linear-gradient(135deg, #1565c0 0%, #1976d2 100%);
+    }
+
+    .status-box {
+      background: #f5f5f5;
+      border-radius: 10px;
+      padding: 20px;
+      margin-top: 20px;
+      min-height: 100px;
+    }
+
+    .status-title {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+
+    .status-content {
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      color: #666;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .status-content.success {
+      color: #2e7d32;
+    }
+
+    .status-content.error {
+      color: #c62828;
+    }
+
+    .info-box {
+      background: #e3f2fd;
+      border-left: 4px solid #1976d2;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 25px;
+      font-size: 14px;
+      color: #1565c0;
+    }
+
+    .info-box strong {
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    .redis-monitor {
+      background: #1e1e1e;
+      border-radius: 10px;
+      padding: 20px;
+      margin-top: 20px;
+      color: #d4d4d4;
+    }
+
+    .redis-monitor-title {
+      font-weight: 600;
+      color: #4ec9b0;
+      margin-bottom: 12px;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .redis-monitor-title .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #4caf50;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .redis-data {
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      line-height: 1.6;
+      color: #ce9178;
+    }
+
+    .redis-data .key {
+      color: #9cdcfe;
+    }
+
+    .redis-data .value {
+      color: #ce9178;
+    }
+
+    .redis-data .true {
+      color: #4ec9b0;
+    }
+
+    .redis-data .false {
+      color: #f44336;
+    }
+
+    .redis-monitor-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .btn-refresh {
+      background: #4ec9b0;
+      color: #1e1e1e;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-refresh:hover {
+      background: #5eddc4;
+      transform: translateY(-1px);
+    }
+
+    .btn-refresh:active {
+      transform: translateY(0);
+    }
+
+    .url-preset-buttons {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .btn-preset {
+      padding: 8px 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      background: white;
+      color: #667eea;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      flex: 1;
+    }
+
+    .btn-preset:hover {
+      border-color: #667eea;
+      background: #f5f7ff;
+      transform: translateY(-1px);
+    }
+
+    .btn-preset:active {
+      transform: translateY(0);
+    }
+
+    .btn-preset.active {
+      background: #667eea;
+      color: white;
+      border-color: #667eea;
+    }
+
+    .hint {
+      font-size: 12px;
+      color: #999;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Meeting Rest System</h1>
+    <p class="subtitle">Test Console - 休憩通知テスト</p>
+
+    <div class="info-box">
+      <strong>使い方:</strong>
+      1. API URLを設定（ローカル: http://localhost:8000 / Railway: デプロイURL）<br>
+      2. Meeting IDを入力（Google MeetのURLの最後の部分）<br>
+      3. 「計測開始」をクリック<br>
+      4. 「休憩トリガー」をクリックすると、Member拡張機能に通知が送られます<br>
+      5. 終了時は「計測終了」をクリック
+    </div>
+
+    <div class="form-group">
+      <label for="apiUrl">API URL</label>
+      <div class="url-preset-buttons">
+        <button class="btn-preset" onclick="setUrlPreset('local', this)">
+          🏠 LOCAL
+        </button>
+        <button class="btn-preset" onclick="setUrlPreset('railway', this)">
+          🚀 RAILWAY
+        </button>
+        <button class="btn-preset active" onclick="setUrlPreset('custom', this)">
+          ✏️ 自由記述
+        </button>
+      </div>
+      <input
+        type="text"
+        id="apiUrl"
+        placeholder="例: http://localhost:8000 または https://your-app.up.railway.app"
+        value="http://localhost:8000"
+      />
+      <div class="hint">ローカル: http://localhost:8000 / Railway: デプロイURL</div>
+    </div>
+
+    <div class="form-group">
+      <label for="meetingId">Meeting ID</label>
+      <input
+        type="text"
+        id="meetingId"
+        placeholder="例: abc-defg-hij"
+        value="test-meeting-123"
+      />
+    </div>
+
+    <div class="button-group">
+      <button class="btn-start" onclick="startMeeting()">
+        🟢 計測開始
+      </button>
+      <button class="btn-rest" onclick="triggerRest()">
+        ☕ 休憩トリガー
+      </button>
+      <button class="btn-end" onclick="endMeeting()">
+        🔴 計測終了
+      </button>
+      <button class="btn-status" onclick="getStatus()">
+        📊 状態確認
+      </button>
+    </div>
+
+    <div class="status-box">
+      <div class="status-title">Response:</div>
+      <div class="status-content" id="statusContent">待機中...</div>
+    </div>
+
+    <div class="redis-monitor">
+      <div class="redis-monitor-header">
+        <div class="redis-monitor-title">
+          <span class="status-dot"></span>
+          <span id="monitorTitle">Redis Monitor (手動更新)</span>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn-refresh" onclick="manualRefresh()">
+            🔄 更新
+          </button>
+        </div>
+      </div>
+      <div class="redis-data" id="redisData">「🔄 更新」ボタンを押してください</div>
+    </div>
+  </div>
+
+  <script>
+    // config.jsから読み込んだ設定（存在する場合）
+    const RAILWAY_URL = window.MEETING_REST_CONFIG
+      ? window.MEETING_REST_CONFIG.DEFAULT_API_URL
+      : 'https://pure-elegance-production.up.railway.app';
+
+    function getApiUrl() {
+      const input = document.getElementById('apiUrl');
+      let url = input.value.trim();
+      // 末尾のスラッシュを削除
+      if (url.endsWith('/')) {
+        url = url.slice(0, -1);
+      }
+      return url || 'http://localhost:8000';
+    }
+
+    function setUrlPreset(type, button) {
+      const input = document.getElementById('apiUrl');
+      const buttons = document.querySelectorAll('.btn-preset');
+
+      // すべてのボタンからactiveクラスを削除
+      buttons.forEach(btn => btn.classList.remove('active'));
+
+      // クリックされたボタンにactiveクラスを追加
+      button.classList.add('active');
+
+      switch(type) {
+        case 'local':
+          input.value = 'http://localhost:8000';
+          input.readOnly = true;
+          input.style.background = '#f5f5f5';
+          break;
+        case 'railway':
+          input.value = RAILWAY_URL;
+          input.readOnly = true;
+          input.style.background = '#f5f5f5';
+          break;
+        case 'custom':
+          input.readOnly = false;
+          input.style.background = 'white';
+          input.focus();
+          break;
+      }
+
+      // 変更を保存
+      saveUrlPreset(type);
+      saveApiUrl();
+    }
+
+    function getMeetingId() {
+      const input = document.getElementById('meetingId');
+      return input.value.trim();
+    }
+
+    function updateStatus(message, type = 'info') {
+      const statusContent = document.getElementById('statusContent');
+      statusContent.textContent = message;
+      statusContent.className = `status-content ${type}`;
+    }
+
+    async function startMeeting() {
+      const meetingId = getMeetingId();
+      if (!meetingId) {
+        updateStatus('❌ Meeting IDを入力してください', 'error');
+        return;
+      }
+
+      updateStatus('送信中...');
+
+      try {
+        const response = await fetch(`${getApiUrl()}/api/meetings/${meetingId}/start`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          updateStatus(
+            `✅ 計測開始しました\n\n${JSON.stringify(data, null, 2)}`,
+            'success'
+          );
+        } else {
+          updateStatus(
+            `❌ エラー: ${response.status}\n\n${JSON.stringify(data, null, 2)}`,
+            'error'
+          );
+        }
+      } catch (error) {
+        updateStatus(`❌ ネットワークエラー: ${error.message}`, 'error');
+      }
+    }
+
+    async function triggerRest() {
+      const meetingId = getMeetingId();
+      if (!meetingId) {
+        updateStatus('❌ Meeting IDを入力してください', 'error');
+        return;
+      }
+
+      updateStatus('休憩通知を送信中...');
+
+      try {
+        const response = await fetch(`${getApiUrl()}/api/meetings/${meetingId}/rest`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          updateStatus(
+            `✅ 休憩通知を送信しました！\nMember拡張機能でオーバーレイが表示されるはずです。\n\n${JSON.stringify(data, null, 2)}`,
+            'success'
+          );
+        } else {
+          updateStatus(
+            `❌ エラー: ${response.status}\n\n${JSON.stringify(data, null, 2)}`,
+            'error'
+          );
+        }
+      } catch (error) {
+        updateStatus(`❌ ネットワークエラー: ${error.message}`, 'error');
+      }
+    }
+
+    async function endMeeting() {
+      const meetingId = getMeetingId();
+      if (!meetingId) {
+        updateStatus('❌ Meeting IDを入力してください', 'error');
+        return;
+      }
+
+      updateStatus('計測終了中...');
+
+      try {
+        const response = await fetch(`${getApiUrl()}/api/meetings/${meetingId}/end`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          updateStatus(
+            `✅ 計測を終了しました\n\n${JSON.stringify(data, null, 2)}`,
+            'success'
+          );
+        } else {
+          updateStatus(
+            `❌ エラー: ${response.status}\n\n${JSON.stringify(data, null, 2)}`,
+            'error'
+          );
+        }
+      } catch (error) {
+        updateStatus(`❌ ネットワークエラー: ${error.message}`, 'error');
+      }
+    }
+
+    async function getStatus() {
+      const meetingId = getMeetingId();
+      if (!meetingId) {
+        updateStatus('❌ Meeting IDを入力してください', 'error');
+        return;
+      }
+
+      updateStatus('状態を取得中...');
+
+      try {
+        const response = await fetch(`${getApiUrl()}/api/meetings/${meetingId}/status`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          updateStatus(
+            `📊 現在の状態:\n\n${JSON.stringify(data, null, 2)}`,
+            'success'
+          );
+        } else {
+          updateStatus(
+            `❌ エラー: ${response.status}\n\n${JSON.stringify(data, null, 2)}`,
+            'error'
+          );
+        }
+      } catch (error) {
+        updateStatus(`❌ ネットワークエラー: ${error.message}`, 'error');
+      }
+    }
+
+    // ページ読み込み時にサーバーのヘルスチェック
+    async function checkServerHealth() {
+      try {
+        const response = await fetch(`${getApiUrl()}/health`);
+        const data = await response.json();
+
+        if (response.ok && data.status === 'healthy') {
+          updateStatus(
+            `✅ サーバー接続OK\nRedis: ${data.redis}\n\nMeeting IDを入力して操作してください。`,
+            'success'
+          );
+        } else {
+          updateStatus(
+            `⚠️ サーバーは起動していますが、Redis接続に問題があります\n\n${JSON.stringify(data, null, 2)}`,
+            'error'
+          );
+        }
+      } catch (error) {
+        updateStatus(
+          `❌ サーバーに接続できません\n\nDocker Composeでサーバーを起動してください:\ndocker-compose up -d`,
+          'error'
+        );
+      }
+    }
+
+    // Redis監視機能（手動更新のみ）
+    async function monitorRedisData() {
+      const meetingId = getMeetingId();
+      if (!meetingId) {
+        document.getElementById('redisData').innerHTML =
+          '<span style="color: #f44336;">Meeting IDを入力してください</span>';
+        return;
+      }
+
+      try {
+        const response = await fetch(`${getApiUrl()}/api/meetings/${meetingId}/status`);
+        const data = await response.json();
+
+        if (response.ok) {
+          // データを整形して表示
+          const formattedData = `
+<span class="key">Meeting ID:</span> <span class="value">"${data.meeting_id}"</span>
+
+<span class="key">Active:</span> <span class="${data.active ? 'true' : 'false'}">${data.active}</span>
+<span class="key">Rest Flag:</span> <span class="${data.rest_flg ? 'true' : 'false'}">${data.rest_flg}</span>
+
+<span class="key">Started At:</span> <span class="value">${data.started_at || 'null'}</span>
+<span class="key">Rest Started At:</span> <span class="value">${data.rest_started_at || 'null'}</span>
+
+<span class="key">Last Updated:</span> <span class="value">${new Date().toLocaleTimeString('ja-JP')}</span>
+          `.trim();
+
+          document.getElementById('redisData').innerHTML = formattedData;
+        } else {
+          document.getElementById('redisData').innerHTML =
+            `<span style="color: #f44336;">エラー: ${response.status}</span>`;
+        }
+      } catch (error) {
+        document.getElementById('redisData').innerHTML =
+          `<span style="color: #f44336;">接続エラー: ${error.message}</span>`;
+      }
+    }
+
+    // 手動更新
+    function manualRefresh() {
+      monitorRedisData();
+    }
+
+    // API URLをローカルストレージに保存
+    function saveApiUrl() {
+      const url = getApiUrl();
+      localStorage.setItem('apiUrl', url);
+    }
+
+    // API URLをローカルストレージから復元
+    function loadApiUrl() {
+      const savedUrl = localStorage.getItem('apiUrl');
+      const savedPreset = localStorage.getItem('urlPreset') || 'custom';
+      const input = document.getElementById('apiUrl');
+
+      if (savedUrl) {
+        input.value = savedUrl;
+      }
+
+      // プリセットボタンの状態を復元
+      const buttons = document.querySelectorAll('.btn-preset');
+      buttons.forEach(btn => {
+        const btnType = btn.getAttribute('onclick').match(/'([^']+)'/)[1];
+        if (btnType === savedPreset) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+
+      // readonlyの状態を復元
+      if (savedPreset !== 'custom') {
+        input.readOnly = true;
+        input.style.background = '#f5f5f5';
+      }
+    }
+
+    // プリセット状態を保存
+    function saveUrlPreset(type) {
+      localStorage.setItem('urlPreset', type);
+    }
+
+    // API URL入力欄の変更を監視して保存
+    document.getElementById('apiUrl').addEventListener('input', saveApiUrl);
+
+    // 初回ロード時にヘルスチェック
+    window.addEventListener('load', () => {
+      loadApiUrl();
+      checkServerHealth();
+    });
+  </script>
+</body>
+</html>
