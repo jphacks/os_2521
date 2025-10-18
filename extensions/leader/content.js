@@ -53,13 +53,28 @@
         ctx.clearRect(0, 0, SIZE, SIZE);
         ctx.drawImage(videoEl, 0, 0, vw, vh, dx, dy, dw, dh);
 
-        // dataURLにしてポップアップへ送る（軽量プレビュー）
         const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.7 });
         const dataUrl = await blobToDataURL(blob);
         chrome.runtime.sendMessage({ type: 'FRAME', index, dataUrl, w: vw, h: vh });
         last = ts;
       }
-      videoEl.requestVideoFrameCallback(pushFrame);
+      // 継続コールは pushFrame 内で行う（requestVideoFrameCallback を使う）
+      if (typeof videoEl.requestVideoFrameCallback === 'function') {
+        videoEl.requestVideoFrameCallback(pushFrame);
+      }
+    }
+
+    // kick を定義してループを開始する
+    function kick() {
+      if (typeof videoEl.requestVideoFrameCallback === 'function') {
+        videoEl.requestVideoFrameCallback(pushFrame);
+      } else {
+        // フォールバック: setInterval で代用（軽量プレビューなので十分）
+        const id = setInterval(() => {
+          try { pushFrame(performance.now()); } catch (e) {}
+          if (!sessions.has(videoEl) || !running) clearInterval(id);
+        }, minDt);
+      }
     }
 
     sessions.set(videoEl, { index, canvas, ctx });
