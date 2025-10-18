@@ -3,14 +3,39 @@
   "name": "Meet Multi-Video Tap (Popup)",
   "version": "0.4.0",
   "description": "拡張ボタン→ポップアップ内でStart/Stop。Meetページ内の全videoをサムネ表示。",
-  "permissions": ["activeTab", "scripting"],
-  "host_permissions": ["https://meet.google.com/*"],
-  "action": { "default_popup": "popup.html", "default_title": "Meet Multi-Video Tap" },
+  "permissions": [
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://meet.google.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Meet Multi-Video Tap"
+  },
   "content_scripts": [
     {
-      "matches": ["https://meet.google.com/*"],
-      "js": ["content.js"],
+      "matches": [
+        "https://meet.google.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
       "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "face_worker.js",
+        "face_mesh/face_mesh.js",
+        "face_mesh/face_mesh_solution_packed_assets_loader.js",
+        "face_mesh/face_mesh_solution_simd_wasm_bin.wasm"
+      ],
+      "matches": [
+        "https://meet.google.com/*"
+      ]
     }
   ]
 }
