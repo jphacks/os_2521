@@ -65,14 +65,42 @@ async def shutdown_event():
         await redis_client.close()
 
 
+@app.get("/")
+async def root():
+    """ルートエンドポイント"""
+    return {
+        "service": "Meeting Rest System API",
+        "status": "running",
+        "version": "1.0.0",
+        "endpoints": {
+            "health": "/health",
+            "docs": "/docs",
+            "redoc": "/redoc"
+        }
+    }
+
+
 @app.get("/health")
 async def health_check():
     """ヘルスチェックエンドポイント"""
+    redis_status = "disconnected"
+    redis_error = None
+
     try:
         await redis_client.ping()
-        return {"status": "healthy", "redis": "connected"}
+        redis_status = "connected"
     except Exception as e:
-        return {"status": "unhealthy", "redis": "disconnected", "error": str(e)}
+        redis_error = str(e)
+
+    return {
+        "status": "healthy" if redis_status == "connected" else "degraded",
+        "redis": redis_status,
+        "redis_config": {
+            "host": REDIS_HOST,
+            "port": REDIS_PORT
+        },
+        "error": redis_error
+    }
 
 
 @app.post("/api/meetings/{meeting_id}/start")
@@ -397,6 +425,7 @@ async def analyze_blink_image(sid, data):
     result = {
         'blink_detected': blink_detected,
         # 'meeting_id': meeting_id,
+        "image":image_data,
         'server_timestamp': datetime.utcnow().isoformat(),
         'client_timestamp': client_timestamp,
         'status': 'ok'

@@ -22,6 +22,16 @@
   let blinkDetectionInterval = null;
   const BLINK_DETECTION_INTERVAL = 2000; // 2秒ごと
 
+  // まばたき検知の履歴（1分間トラッキング）
+  let blinkHistory = [];
+  const TRACKING_WINDOW = 60000; // 1分間（ミリ秒）
+  const BLINK_THRESHOLD = 1; // 1分間で10回以下なら休憩フラグ
+
+  // 参加者の巡回用
+  let currentParticipantIndex = 0; // 現在検知中の参加者インデックス
+  let participantRotationInterval = null; // 参加者切り替え用タイマー
+  const PARTICIPANT_ROTATION_INTERVAL = 60000; // 1分ごとに参加者を切り替え
+
   function* walkShadow(node) {
     yield node;
     const tw = document.createTreeWalker(node, NodeFilter.SHOW_ELEMENT);
@@ -447,7 +457,7 @@
    */
   function checkSocketIO() {
     if (typeof io !== 'undefined') {
-      return true;
+        return true;
     } else {
       console.error('[Blink Detection] Socket.IO is not loaded');
       return false;
@@ -491,6 +501,28 @@
 
         socket.on('blink_result', (data) => {
           console.log('[Blink Detection] 🔍 まばたき検知結果:', data.blink_detected ? '✓ 検知' : '✗ 未検知');
+          console.log(data.image)
+
+          // まばたき検知結果を履歴に追加
+          const now = Date.now();
+          blinkHistory.push({
+            detected: data.blink_detected,
+            timestamp: now
+          });
+
+          // 1分以上古いデータを削除
+          blinkHistory = blinkHistory.filter(record => now - record.timestamp <= TRACKING_WINDOW);
+
+          // 1分間のまばたき回数をカウント
+          const blinkCount = blinkHistory.filter(record => record.detected).length;
+
+          // 十分なデータが溜まったら判定（最低30回の記録 = 1分間）
+            // まばたきが10回以下の場合、休憩フラグを立てる
+          if (blinkCount <= BLINK_THRESHOLD) {
+            console.warn(`[Blink Detection] ⚠️ まばたきが少なすぎます（${blinkCount}回）- 休憩を促します`);
+            triggerRestBreak();
+          }
+
         });
 
         socket.on('connect_error', (error) => {
@@ -528,13 +560,20 @@
       return;
     }
 
-    // 最初のビデオ要素を取得
+    // すべてのビデオ要素を取得
     const videos = findCandidateVideos();
     if (videos.length === 0) {
       return;
     }
 
-    const video = videos[0]; // 最初のビデオを使用
+    // 現在のインデックスが範囲外の場合、0にリセット
+    if (currentParticipantIndex >= videos.length) {
+      currentParticipantIndex = 0;
+    }
+
+    // 現在の参加者のビデオを取得
+    const video = videos[currentParticipantIndex];
+    console.log(`[Blink Detection] 📹 参加者 ${currentParticipantIndex + 1}/${videos.length} を検知中`);
 
     // Canvasにビデオフレームを描画
     const canvas = document.createElement('canvas');
@@ -551,8 +590,28 @@
     socket.emit('analyze_blink_image', {
       image: imageData,
       meeting_id: meetingId,
+      participant_index: currentParticipantIndex,
+      total_participants: videos.length,
       timestamp: new Date().toISOString()
     });
+  }
+
+  /**
+   * 次の参加者に切り替える
+   */
+  function rotateToNextParticipant() {
+    const videos = findCandidateVideos();
+    if (videos.length === 0) {
+      currentParticipantIndex = 0;
+      return;
+    }
+
+    // 次の参加者に移動（ループ）
+    currentParticipantIndex = (currentParticipantIndex + 1) % videos.length;
+    console.log(`[Blink Detection] 🔄 次の参加者に切り替え: ${currentParticipantIndex + 1}/${videos.length}`);
+
+    // まばたき履歴をリセット（新しい参加者の検知開始）
+    blinkHistory = [];
   }
 
   /**
@@ -563,15 +622,24 @@
       return;
     }
 
-    console.log('[Blink Detection] まばたき検知を開始（2秒間隔）');
+    console.log('[Blink Detection] まばたき検知を開始（2秒間隔、1分ごとに参加者を巡回）');
+
+    // 初期化
+    currentParticipantIndex = 0;
+    blinkHistory = [];
 
     // 即座に1回送信
     captureAndSendBlinkImage();
 
-    // 定期的に送信
+    // 定期的に送信（2秒ごと）
     blinkDetectionInterval = setInterval(() => {
       captureAndSendBlinkImage();
     }, BLINK_DETECTION_INTERVAL);
+
+    // 1分ごとに参加者を切り替え
+    participantRotationInterval = setInterval(() => {
+      rotateToNextParticipant();
+    }, PARTICIPANT_ROTATION_INTERVAL);
   }
 
   /**
@@ -582,6 +650,45 @@
       clearInterval(blinkDetectionInterval);
       blinkDetectionInterval = null;
       console.log('[Blink Detection] まばたき検知を停止');
+    }
+
+    if (participantRotationInterval) {
+      clearInterval(participantRotationInterval);
+      participantRotationInterval = null;
+      console.log("-----------------------------------------------------------------------------------------------------------")
+    }
+
+    // 状態をリセット
+    blinkHistory = [];
+    currentParticipantIndex = 0;
+  }
+
+  /**
+   * 休憩を促すフラグを立てる
+   */
+  async function triggerRestBreak() {
+    if (!meetingId) {
+      console.error('[Blink Detection] Meeting IDがありません');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/meetings/${meetingId}/rest`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        console.log('[Blink Detection] ✓ 休憩フラグを立てました');
+        // 履歴をリセットして、連続して休憩通知が出ないようにする
+        blinkHistory = [];
+      } else {
+        console.error('[Blink Detection] 休憩フラグの設定に失敗:', response.status);
+      }
+    } catch (error) {
+      console.error('[Blink Detection] 休憩フラグの設定エラー:', error);
     }
   }
 
