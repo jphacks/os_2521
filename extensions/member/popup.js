@@ -7,7 +7,6 @@
   const connectBtn = document.getElementById('connect-btn');
   const disconnectBtn = document.getElementById('disconnect-btn');
   const requestRestBtn = document.getElementById('request-rest-btn');
-  const restRequestStatus = document.getElementById('rest-request-status');
 
   // config.jsから読み込んだ設定（存在する場合）
   const RAILWAY_URL = window.MEETING_REST_CONFIG
@@ -229,7 +228,6 @@
       connectBtn.style.display = 'block';
       disconnectBtn.style.display = 'none';
       requestRestBtn.disabled = true;
-      restRequestStatus.classList.remove('visible');
     } catch (error) {
       console.error('Disconnect error:', error);
     }
@@ -262,13 +260,34 @@
       const data = await response.json();
       console.log('[Popup] Rest request sent:', data);
 
-      // 送信成功メッセージ
-      alert(`休憩希望を送信しました（匿名）\n現在の希望者数: ${data.request_count}人`);
+      // Content scriptに休憩オーバーレイ表示を指示
+      try {
+        const tab = await getCurrentTab();
 
-      // 5秒後にボタンを再度有効化
+        // Google Meetのページかチェック
+        if (tab && tab.url && tab.url.includes('meet.google.com')) {
+          await chrome.tabs.sendMessage(tab.id, {
+            action: 'show_rest_overlay',
+            data: {
+              event: 'rest_required',
+              meeting_id: meetingId,
+              timestamp: data.timestamp,
+              message: '休憩時間です（あなたからのリクエスト）'
+            }
+          });
+          console.log('[Popup] Rest overlay displayed for requester');
+        } else {
+          console.log('[Popup] Not on Google Meet page, skipping overlay display');
+        }
+      } catch (overlayError) {
+        // Content scriptへのメッセージ送信が失敗しても続行
+        console.warn('[Popup] Failed to display rest overlay:', overlayError);
+      }
+
+      // 3秒後にボタンを再度有効化
       setTimeout(() => {
         requestRestBtn.disabled = false;
-      }, 5000);
+      }, 3000);
     } catch (error) {
       console.error('[Popup] Rest request error:', error);
       alert('休憩希望の送信に失敗しました: ' + error.message);
@@ -280,15 +299,6 @@
   chrome.runtime.onMessage.addListener((message) => {
     if (message.type === 'status_update') {
       updateStatus(message.status, message.text);
-    } else if (message.type === 'rest_request_updated') {
-      // 休憩希望通知を表示
-      restRequestStatus.textContent = `💤 ${message.message || '誰かが休憩を希望しています'}`;
-      restRequestStatus.classList.add('visible');
-
-      // 10秒後に非表示
-      setTimeout(() => {
-        restRequestStatus.classList.remove('visible');
-      }, 10000);
     }
   });
 

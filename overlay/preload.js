@@ -19,11 +19,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('hide-rest-notification', (event) => callback());
   },
 
-  // 休憩希望通知表示イベントを受信
-  onShowRestRequest: (callback) => {
-    ipcRenderer.on('show-rest-request', (event, data) => callback(data));
-  },
-
   // 通知を非表示にする
   hideNotification: () => {
     ipcRenderer.send('hide-notification');

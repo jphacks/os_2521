@@ -176,60 +176,6 @@
       }
     }
 
-    @keyframes slideInRight {
-      from {
-        transform: translateX(400px);
-        opacity: 0;
-      }
-      to {
-        transform: translateX(0);
-        opacity: 1;
-      }
-    }
-
-    @keyframes slideOutRight {
-      from {
-        transform: translateX(0);
-        opacity: 1;
-      }
-      to {
-        transform: translateX(400px);
-        opacity: 0;
-      }
-    }
-
-    /* 休憩希望通知（トースト） */
-    #rest-request-toast {
-      position: fixed;
-      top: 100px;
-      right: 20px;
-      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-      color: white;
-      padding: 16px 24px;
-      border-radius: 12px;
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
-      z-index: 9998;
-      pointer-events: none;
-      font-size: 14px;
-      font-weight: 600;
-      max-width: 300px;
-      display: none;
-    }
-
-    #rest-request-toast.visible {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      animation: slideInRight 0.3s ease-out;
-    }
-
-    #rest-request-toast.hiding {
-      animation: slideOutRight 0.3s ease-in;
-    }
-
-    #rest-request-toast .emoji {
-      font-size: 24px;
-    }
   </style>
 </head>
 <body>
@@ -259,12 +205,6 @@
       <p id="rest-message">少し休憩して、リフレッシュしましょう</p>
       <button id="rest-ok-btn">OK</button>
     </div>
-  </div>
-
-  <!-- 休憩希望トースト通知 -->
-  <div id="rest-request-toast">
-    <div class="emoji">💤</div>
-    <div id="rest-request-message">誰かが休憩を希望しています</div>
   </div>
 
   <script src="renderer.js"></script>

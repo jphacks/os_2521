@@ -155,61 +155,40 @@ async def trigger_rest(meeting_id: str):
 @app.post("/api/meetings/{meeting_id}/rest-request")
 async def request_rest(meeting_id: str):
     """
-    匿名で休憩希望を送信する
-    - Redisの休憩希望カウンターをインクリメント（TTL: 5分）
-    - カウンターが閾値を超えたら全員に通知
+    匿名で休憩希望を送信する（1人でも押したら全員に休憩通知）
+    - Redisに rest_flg = true を保存（TTL: 60分）
+    - Redis Pub/Subでイベントを発行
     """
     timestamp = datetime.utcnow().isoformat()
 
-    # 休憩希望カウンターをインクリメント
-    counter_key = f"meetings:{meeting_id}:rest_requests"
-    current_count = await redis_client.incr(counter_key)
-
-    # 初回インクリメント時にTTLを設定（5分）
-    if current_count == 1:
-        await redis_client.expire(counter_key, 300)
-
-    # 最新のリクエスト時刻を保存
+    # rest_flgを設定
     await redis_client.setex(
-        f"meetings:{meeting_id}:rest_request_last",
-        300,
+        f"meetings:{meeting_id}:rest_flg",
+        3600,  # 60分
+        "true"
+    )
+    await redis_client.setex(
+        f"meetings:{meeting_id}:rest_started_at",
+        3600,
         timestamp
     )
 
-    # Pub/Subでカウンター更新を通知
-    notification_data = {
-        "event": "rest_request_updated",
+    # Pub/Subでイベントを発行
+    event_data = {
+        "event": "rest_required",
         "meeting_id": meeting_id,
-        "request_count": current_count,
         "timestamp": timestamp,
-        "message": f"誰かが休憩を希望しています（{current_count}人目）"
+        "message": "休憩時間です（メンバーからのリクエスト）"
     }
     await redis_client.publish(
-        f"meeting:{meeting_id}:rest_request",
-        json.dumps(notification_data)
+        f"meeting:{meeting_id}:rest",
+        json.dumps(event_data)
     )
 
     return {
         "status": "ok",
         "meeting_id": meeting_id,
-        "request_count": current_count,
         "timestamp": timestamp
-    }
-
-
-@app.get("/api/meetings/{meeting_id}/rest-requests")
-async def get_rest_requests(meeting_id: str):
-    """
-    現在の休憩希望カウントを取得する
-    """
-    counter_key = f"meetings:{meeting_id}:rest_requests"
-    count = await redis_client.get(counter_key)
-    last_request = await redis_client.get(f"meetings:{meeting_id}:rest_request_last")
-
-    return {
-        "meeting_id": meeting_id,
-        "request_count": int(count) if count else 0,
-        "last_request_at": last_request
     }
 
 
@@ -250,9 +229,8 @@ async def sse_events(meeting_id: str):
         pubsub = pubsub_client.pubsub()
 
         try:
-            # 会議の休憩チャンネルと休憩希望チャンネルを購読
+            # 会議の休憩チャンネルを購読
             await pubsub.subscribe(f"meeting:{meeting_id}:rest")
-            await pubsub.subscribe(f"meeting:{meeting_id}:rest_request")
             print(f"✓ SSE client connected: meeting_id={meeting_id}")
 
             # 接続確立メッセージ
@@ -304,7 +282,6 @@ async def sse_events(meeting_id: str):
 
         finally:
             await pubsub.unsubscribe(f"meeting:{meeting_id}:rest")
-            await pubsub.unsubscribe(f"meeting:{meeting_id}:rest_request")
             await pubsub.close()
             await pubsub_client.close()
 
@@ -399,7 +376,6 @@ async def bridge_rest_events_to_socketio():
 
     # すべての休憩チャンネルを購読（パターンマッチ）
     await pubsub.psubscribe('meeting:*:rest')
-    await pubsub.psubscribe('meeting:*:rest_request')
 
     print("✓ Started bridging Redis events to Socket.IO")
 
@@ -414,12 +390,8 @@ async def bridge_rest_events_to_socketio():
                 event_data = json.loads(message['data'])
 
                 # Socket.IOで配信
-                if 'rest_request' in channel:
-                    await sio.emit('rest_request_updated', event_data, room=f'meeting:{meeting_id}')
-                    print(f"✓ Bridged rest request event to Socket.IO: {meeting_id}")
-                else:
-                    await sio.emit('rest_required', event_data, room=f'meeting:{meeting_id}')
-                    print(f"✓ Bridged rest event to Socket.IO: {meeting_id}")
+                await sio.emit('rest_required', event_data, room=f'meeting:{meeting_id}')
+                print(f"✓ Bridged rest event to Socket.IO: {meeting_id}")
     finally:
         await pubsub.close()
         await pubsub_client.close()

@@ -202,22 +202,6 @@
       opacity: 0.5;
       cursor: not-allowed;
     }
-
-    .rest-request-status {
-      background: #fff3e0;
-      border-left: 3px solid #ff9800;
-      padding: 10px;
-      border-radius: 4px;
-      font-size: 11px;
-      color: #e65100;
-      line-height: 1.4;
-      margin-bottom: 8px;
-      display: none;
-    }
-
-    .rest-request-status.visible {
-      display: block;
-    }
   </style>
 </head>
 <body>
@@ -271,10 +255,6 @@
   <button class="btn-disconnect" id="disconnect-btn" style="display: none;">
     🔌 切断
   </button>
-
-  <div class="rest-request-status" id="rest-request-status">
-    💤 誰かが休憩を希望しています
-  </div>
 
   <button class="btn-request-rest" id="request-rest-btn" disabled>
     💤 休憩を希望する（匿名）

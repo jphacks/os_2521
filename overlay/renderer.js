@@ -7,8 +7,6 @@ const pageTimestamp = document.getElementById('page-timestamp');
 const restNotification = document.getElementById('rest-notification');
 const restMessage = document.getElementById('rest-message');
 const restOkBtn = document.getElementById('rest-ok-btn');
-const restRequestToast = document.getElementById('rest-request-toast');
-const restRequestMessage = document.getElementById('rest-request-message');
 
 /**
  * ページ情報を更新
@@ -86,25 +84,5 @@ function playNotificationSound() {
     console.warn('Failed to play notification sound:', error);
   }
 }
-
-/**
- * 休憩希望通知を表示
- */
-window.electronAPI.onShowRestRequest = ((data) => {
-  console.log('Showing rest request notification:', data);
-
-  restRequestMessage.textContent = data.message || '誰かが休憩を希望しています';
-  restRequestToast.classList.remove('hiding');
-  restRequestToast.classList.add('visible');
-
-  // 5秒後に自動的に非表示
-  setTimeout(() => {
-    restRequestToast.classList.remove('visible');
-    restRequestToast.classList.add('hiding');
-    setTimeout(() => {
-      restRequestToast.classList.remove('hiding');
-    }, 300);
-  }, 5000);
-});
 
 console.log('Overlay renderer loaded');

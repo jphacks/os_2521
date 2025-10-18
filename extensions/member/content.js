@@ -155,8 +155,6 @@
 
         if (data.event === 'rest_required') {
           showRestOverlay(data);
-        } else if (data.event === 'rest_request_updated') {
-          showRestRequestNotification(data);
         }
       } catch (error) {
         console.error('[Member] Failed to parse SSE message:', error);
@@ -380,87 +378,6 @@
   }
 
   /**
-   * 休憩希望通知を表示（小さなトースト通知）
-   */
-  function showRestRequestNotification(data) {
-    console.log('[Member] Showing rest request notification:', data);
-
-    // ポップアップに通知を送る
-    chrome.runtime.sendMessage({
-      type: 'rest_request_updated',
-      message: data.message,
-      request_count: data.request_count
-    }).catch(() => {
-      // ポップアップが開いていない場合はエラーを無視
-    });
-
-    // ページ内にもトースト通知を表示
-    const toastElement = document.createElement('div');
-    toastElement.id = 'meeting-rest-request-toast';
-    toastElement.innerHTML = `
-      <div style="
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        color: white;
-        padding: 16px 24px;
-        border-radius: 12px;
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-        z-index: 2147483646;
-        font-family: 'Google Sans', 'Roboto', sans-serif;
-        font-size: 14px;
-        font-weight: 600;
-        animation: slideInRight 0.3s ease-out;
-        max-width: 300px;
-      ">
-        <div style="display: flex; align-items: center; gap: 12px;">
-          <div style="font-size: 24px;">💤</div>
-          <div>${data.message || '誰かが休憩を希望しています'}</div>
-        </div>
-      </div>
-    `;
-
-    // アニメーション用のスタイルを追加
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes slideInRight {
-        from {
-          transform: translateX(400px);
-          opacity: 0;
-        }
-        to {
-          transform: translateX(0);
-          opacity: 1;
-        }
-      }
-      @keyframes slideOutRight {
-        from {
-          transform: translateX(0);
-          opacity: 1;
-        }
-        to {
-          transform: translateX(400px);
-          opacity: 0;
-        }
-      }
-    `;
-    document.head.appendChild(style);
-
-    document.body.appendChild(toastElement);
-
-    // 5秒後に自動的に非表示
-    setTimeout(() => {
-      toastElement.style.animation = 'slideOutRight 0.3s ease-in';
-      setTimeout(() => {
-        if (document.body.contains(toastElement)) {
-          document.body.removeChild(toastElement);
-        }
-      }, 300);
-    }, 5000);
-  }
-
-  /**
    * ページ読み込み完了後に初期化
    */
   function init() {
@@ -516,6 +433,15 @@
         sendResponse({ success: true, message: 'Disconnected' });
       } catch (error) {
         console.error('[Member Content] Disconnect failed:', error);
+        sendResponse({ success: false, error: error.message });
+      }
+    } else if (message.action === 'show_rest_overlay') {
+      try {
+        console.log('[Member Content] Showing rest overlay from popup');
+        showRestOverlay(message.data);
+        sendResponse({ success: true, message: 'Rest overlay displayed' });
+      } catch (error) {
+        console.error('[Member Content] Failed to show rest overlay:', error);
         sendResponse({ success: false, error: error.message });
       }
     }

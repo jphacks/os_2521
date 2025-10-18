@@ -155,14 +155,6 @@ function startWebSocketConnection() {
       overlayWindow.webContents.send('show-rest-notification', data);
     }
   });
-
-  // 休憩希望通知を受信
-  socket.on('rest_request_updated', (data) => {
-    console.log('Received rest request notification:', data);
-    if (overlayWindow) {
-      overlayWindow.webContents.send('show-rest-request', data);
-    }
-  });
 }
 
 /**
