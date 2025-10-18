@@ -6,15 +6,17 @@ import socketio
 import json
 import asyncio
 import os
+import random
 from datetime import datetime
 from typing import AsyncGenerator
 
 app = FastAPI(title="Meeting Rest System API")
 
-# Socket.IOサーバーを作成
+# Socket.IOサーバーを作成（CORS完全開放）
+# ワイルドカードで全てのオリジンを許可
 sio = socketio.AsyncServer(
     async_mode='asgi',
-    cors_allowed_origins='*',
+    cors_allowed_origins='*',  # 全てのオリジンを許可
     logger=True,
     engineio_logger=True
 )
@@ -338,7 +340,7 @@ async def join_meeting(sid, data):
     meeting_id = data.get('meeting_id')
     if meeting_id:
         room_name = f'meeting:{meeting_id}'
-        sio.enter_room(sid, room_name)
+        await sio.enter_room(sid, room_name)
         print(f"✓ Client {sid} joined room: {room_name}")
 
         # 最新のページ情報を送信
@@ -357,8 +359,55 @@ async def leave_meeting(sid, data):
     meeting_id = data.get('meeting_id')
     if meeting_id:
         room_name = f'meeting:{meeting_id}'
-        sio.leave_room(sid, room_name)
+        await sio.leave_room(sid, room_name)
         print(f"✓ Client {sid} left room: {room_name}")
+
+
+@sio.event
+async def analyze_blink_image(sid, data):
+    """
+    まばたき検知用画像を受信してランダムな結果を返す
+
+    Args:
+        sid: クライアントのセッションID
+        data: {
+            'image': 'base64エンコードされた画像データ',
+            'meeting_id': 'ミーティングID',
+            'timestamp': 'クライアント側のタイムスタンプ'
+        }
+
+    Returns:
+        Socket.IOで 'blink_result' イベントを送信
+        {
+            'blink_detected': true/false (ランダム),
+            'timestamp': 'サーバー側のタイムスタンプ',
+            'meeting_id': 'ミーティングID'
+        }
+    """
+    meeting_id = data.get('meeting_id')
+    image_data = data.get('image')
+    client_timestamp = data.get('timestamp')
+
+    print(f"✓ Received blink analysis request from {sid} for meeting {meeting_id}")
+
+    # ランダムにtrue/falseを生成（まばたき検知のモック）
+    blink_detected = random.choice([True, False])
+
+    # 結果を返送
+    result = {
+        'blink_detected': blink_detected,
+        # 'meeting_id': meeting_id,
+        'server_timestamp': datetime.utcnow().isoformat(),
+        'client_timestamp': client_timestamp,
+        'status': 'ok'
+    }
+
+    # クライアントに結果を送信
+    await sio.emit('blink_result', result, room=sid)
+
+    print(f"✓ Sent blink result to {sid}: blink_detected={blink_detected}")
+
+    return result
 
 
 # Redisの休憩イベントをSocket.IOにブリッジするタスク

@@ -6,7 +6,7 @@
 
 ```
 extensions/
-├── leader/          # リーダー用拡張機能
+├── leader/          # **リーダー用拡張機能**
 │   ├── manifest.json
 │   ├── content.js
 │   ├── popup.html

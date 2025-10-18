@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker-compose restart api)",
+      "Bash(docker logs meeting-rest-api --tail 20)",
+      "Bash(docker-compose ps)",
+      "Bash(git rm doc/blink-detection-system.md extensions/leader/BLINK_DETECTION_README.md server/BLINK_API_README.md server/test_blink_client.html)",
+      "Bash(git rm -f doc/blink-detection-system.md extensions/leader/BLINK_DETECTION_README.md server/BLINK_API_README.md server/test_blink_client.html)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

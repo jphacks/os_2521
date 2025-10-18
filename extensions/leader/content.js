@@ -17,6 +17,11 @@
   let overlayElement = null;
   let pageInfoInterval = null;
 
+  // Socket.IO変数（まばたき検知用）
+  let socket = null;
+  let blinkDetectionInterval = null;
+  const BLINK_DETECTION_INTERVAL = 2000; // 2秒ごと
+
   function* walkShadow(node) {
     yield node;
     const tw = document.createTreeWalker(node, NodeFilter.SHOW_ELEMENT);
@@ -138,19 +143,13 @@
         timestamp: new Date().toISOString()
       };
 
-      const response = await fetch(`${API_BASE_URL}/api/meetings/${meetingId}/page-info`, {
+      await fetch(`${API_BASE_URL}/api/meetings/${meetingId}/page-info`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(pageInfo)
       });
-
-      if (response.ok) {
-        console.log('[Leader] Page info sent:', pageInfo);
-      } else {
-        console.error('[Leader] Failed to send page info:', response.status);
-      }
     } catch (error) {
       console.error('[Leader] Error sending page info:', error);
     }
@@ -161,7 +160,6 @@
    */
   function startPageInfoMonitoring() {
     if (pageInfoInterval) {
-      console.log('[Leader] Page info monitoring already started');
       return;
     }
 
@@ -170,7 +168,6 @@
 
     // 5秒ごとに送信
     pageInfoInterval = setInterval(sendPageInfo, 5000);
-    console.log('[Leader] Started page info monitoring (every 5 seconds)');
   }
 
   /**
@@ -180,7 +177,6 @@
     if (pageInfoInterval) {
       clearInterval(pageInfoInterval);
       pageInfoInterval = null;
-      console.log('[Leader] Stopped page info monitoring');
     }
   }
 
@@ -194,7 +190,6 @@
       eventSource.close();
       eventSource = null;
       notifyStatus('', '未接続');
-      console.log('[Leader] Disconnected from SSE');
     }
   }
 
@@ -203,13 +198,11 @@
    */
   function startSSEConnection() {
     if (eventSource) {
-      console.log('[Leader] SSE already connected');
       notifyStatus('connected', '接続済み ✓');
       return;
     }
 
     if (!meetingId) {
-      console.error('[Leader] No meeting_id provided');
       notifyStatus('error', 'Meeting IDが未設定');
       return;
     }
@@ -217,14 +210,10 @@
     notifyStatus('connecting', '接続中...');
 
     const sseUrl = `${API_BASE_URL}/api/sse/events?meeting_id=${meetingId}`;
-    console.log(`[Leader] Connecting to SSE: ${sseUrl}`);
-
     eventSource = new EventSource(sseUrl);
 
     // 接続確立
     eventSource.addEventListener('connected', (event) => {
-      const data = JSON.parse(event.data);
-      console.log('[Leader] SSE connected:', data);
       notifyStatus('connected', '接続済み ✓');
 
       // ページ情報の監視を開始
@@ -235,7 +224,6 @@
     eventSource.addEventListener('message', (event) => {
       try {
         const data = JSON.parse(event.data);
-        console.log('[Leader] SSE event received:', data);
 
         if (data.event === 'rest_required') {
           showRestOverlay(data);
@@ -246,9 +234,8 @@
     });
 
     // ハートビート
-    eventSource.addEventListener('heartbeat', (event) => {
-      const data = JSON.parse(event.data);
-      console.log('[Leader] Heartbeat:', data.timestamp);
+    eventSource.addEventListener('heartbeat', () => {
+      // ハートビートを受信（何もしない）
     });
 
     // エラーハンドリング
@@ -258,9 +245,8 @@
 
       // 接続が切れた場合は再接続を試みる
       if (eventSource.readyState === EventSource.CLOSED) {
-        console.log('[Leader] SSE connection closed. Reconnecting in 5 seconds...');
         eventSource = null;
-        notifyStatus('connecting', '再接続中... (5秒後)');
+        notifyStatus('connecting', '再接続中...');
         setTimeout(startSSEConnection, 5000);
       }
     };
@@ -272,11 +258,8 @@
   function showRestOverlay(data) {
     // 既にオーバーレイが表示されている場合はスキップ
     if (overlayElement && document.body.contains(overlayElement)) {
-      console.log('[Leader] Overlay already shown');
       return;
     }
-
-    console.log('[Leader] Showing rest overlay - BLOCKING MODE');
 
     // オーバーレイ要素を作成
     overlayElement = document.createElement('div');
@@ -414,8 +397,6 @@
   function hideRestOverlay() {
     if (!overlayElement) return;
 
-    console.log('[Leader] Hiding rest overlay');
-
     // Escキーイベントリスナーを削除
     if (overlayElement._preventEscape) {
       document.removeEventListener('keydown', overlayElement._preventEscape, true);
@@ -462,22 +443,189 @@
   }
 
   /**
+   * Socket.IOが利用可能か確認
+   */
+  function checkSocketIO() {
+    if (typeof io !== 'undefined') {
+      return true;
+    } else {
+      console.error('[Blink Detection] Socket.IO is not loaded');
+      return false;
+    }
+  }
+
+  /**
+   * Socket.IO接続を確立（接続完了まで待機）
+   */
+  async function connectToBlinkDetectionServer() {
+    try {
+      // Socket.IOが利用可能か確認
+      if (!checkSocketIO()) {
+        throw new Error('Socket.IO is not available');
+      }
+
+      if (socket && socket.connected) {
+        console.log('[Blink Detection] Already connected to server');
+        return Promise.resolve();
+      }
+
+      // 接続完了をPromiseで待つ
+      return new Promise((resolve, reject) => {
+        socket = io(API_BASE_URL, {
+          transports: ['polling']  // pollingのみを使用（WebSocketの403エラーを回避）
+        });
+
+        socket.on('connect', () => {
+          // 会議ルームに参加
+          if (meetingId) {
+            socket.emit('join_meeting', { meeting_id: meetingId });
+          }
+
+          // 接続完了を通知
+          resolve();
+        });
+
+        socket.on('disconnect', () => {
+          console.log('[Blink Detection] 接続が切断されました');
+        });
+
+        socket.on('blink_result', (data) => {
+          console.log('[Blink Detection] 🔍 まばたき検知結果:', data.blink_detected ? '✓ 検知' : '✗ 未検知');
+        });
+
+        socket.on('connect_error', (error) => {
+          console.error('[Blink Detection] Connection error:', error);
+          reject(error);
+        });
+
+        socket.on('error', (error) => {
+          console.error('[Blink Detection] Socket.IO error:', error);
+        });
+
+        // タイムアウト（10秒）
+        setTimeout(() => {
+          if (!socket.connected) {
+            reject(new Error('Connection timeout'));
+          }
+        }, 10000);
+      });
+
+    } catch (error) {
+      console.error('[Blink Detection] Failed to connect:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * videoからフレームをキャプチャしてSocket.IOで送信
+   */
+  function captureAndSendBlinkImage() {
+    if (!socket || !socket.connected) {
+      return;
+    }
+
+    if (!meetingId) {
+      return;
+    }
+
+    // 最初のビデオ要素を取得
+    const videos = findCandidateVideos();
+    if (videos.length === 0) {
+      return;
+    }
+
+    const video = videos[0]; // 最初のビデオを使用
+
+    // Canvasにビデオフレームを描画
+    const canvas = document.createElement('canvas');
+    canvas.width = 640;
+    canvas.height = 480;
+    const ctx = canvas.getContext('2d');
+
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    // JPEG形式でBase64エンコード
+    const imageData = canvas.toDataURL('image/jpeg', 0.7);
+
+    // Socket.IOで送信
+    socket.emit('analyze_blink_image', {
+      image: imageData,
+      meeting_id: meetingId,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  /**
+   * まばたき検知の自動送信を開始
+   */
+  function startBlinkDetection() {
+    if (blinkDetectionInterval) {
+      return;
+    }
+
+    console.log('[Blink Detection] まばたき検知を開始（2秒間隔）');
+
+    // 即座に1回送信
+    captureAndSendBlinkImage();
+
+    // 定期的に送信
+    blinkDetectionInterval = setInterval(() => {
+      captureAndSendBlinkImage();
+    }, BLINK_DETECTION_INTERVAL);
+  }
+
+  /**
+   * まばたき検知の自動送信を停止
+   */
+  function stopBlinkDetection() {
+    if (blinkDetectionInterval) {
+      clearInterval(blinkDetectionInterval);
+      blinkDetectionInterval = null;
+      console.log('[Blink Detection] まばたき検知を停止');
+    }
+  }
+
+  /**
+   * URLからMeeting IDを抽出
+   */
+  function extractMeetingIdFromURL() {
+    try {
+      const url = window.location.href;
+      // Google MeetのURL形式: https://meet.google.com/abc-defg-hij
+      const match = url.match(/meet\.google\.com\/([a-z]{3}-[a-z]{4}-[a-z]{3})/);
+      if (match && match[1]) {
+        return match[1];
+      }
+      return null;
+    } catch (error) {
+      console.error('[Leader] Failed to extract meeting ID:', error);
+      return null;
+    }
+  }
+
+  /**
    * ページ読み込み完了後に初期化
    */
   function initRestSystem() {
-    console.log('[Leader] Rest system initialized');
+    // URLからMeeting IDを抽出
+    const urlMeetingId = extractMeetingIdFromURL();
+    if (urlMeetingId) {
+      meetingId = urlMeetingId;
+    }
 
     // ストレージから接続状態とAPI URLを復元
     chrome.storage.local.get(['meetingId', 'apiUrl', 'isConnected'], (result) => {
       if (result.apiUrl) {
         API_BASE_URL = result.apiUrl;
-        console.log('[Leader] API URL loaded:', API_BASE_URL);
       }
 
-      if (result.isConnected && result.meetingId) {
+      // ストレージのMeeting IDがあればそれを優先
+      if (result.meetingId) {
         meetingId = result.meetingId;
+      }
+
+      if (result.isConnected && meetingId) {
         startSSEConnection();
-        console.log('[Leader] Auto-reconnecting to:', meetingId);
       }
     });
   }
@@ -488,12 +636,38 @@
       running = true;
       enableDynamicAttach();
       chrome.runtime.sendMessage({ type: 'STATUS', text: 'running…' });
+
+      // Meeting IDを確認・抽出
+      if (!meetingId) {
+        meetingId = extractMeetingIdFromURL();
+        if (!meetingId) {
+          console.error('[Blink Detection] Meeting IDを取得できませんでした');
+        }
+      }
+
+      // まばたき検知を開始
+      if (meetingId) {
+        connectToBlinkDetectionServer()
+          .then(() => {
+            startBlinkDetection();
+          })
+          .catch((error) => {
+            console.error('[Blink Detection] 接続失敗:', error.message);
+          });
+      } else {
+        console.error('[Blink Detection] Meeting IDが取得できませんでした');
+      }
+
       sendResponse && sendResponse({});
       return true;
     }
     if (msg.cmd === 'STOP') {
       stopAll();
       chrome.runtime.sendMessage({ type: 'STATUS', text: 'stopped' });
+
+      // まばたき検知を停止
+      stopBlinkDetection();
+
       sendResponse && sendResponse({});
       return true;
     }
@@ -505,15 +679,13 @@
         // API URLが指定されていれば更新
         if (msg.apiUrl) {
           API_BASE_URL = msg.apiUrl;
-          console.log('[Leader] API URL updated:', API_BASE_URL);
         }
-
-        console.log('[Leader] Connecting with meeting ID:', meetingId);
 
         disconnectSSE();
         startSSEConnection();
 
-        console.log('[Leader] Connection initiated successfully');
+        // Socket.IO接続も確立（まばたき検知用）
+        connectToBlinkDetectionServer();
         sendResponse({ success: true, message: 'Connected' });
       } catch (error) {
         console.error('[Leader] Connection failed:', error);
@@ -522,8 +694,17 @@
       return true;
     } else if (msg.action === 'disconnect') {
       try {
-        console.log('[Leader] Disconnecting...');
         disconnectSSE();
+
+        // まばたき検知を停止
+        stopBlinkDetection();
+
+        // Socket.IO接続を切断
+        if (socket) {
+          socket.disconnect();
+          socket = null;
+        }
+
         sendResponse({ success: true, message: 'Disconnected' });
       } catch (error) {
         console.error('[Leader] Disconnect failed:', error);
@@ -532,7 +713,6 @@
       return true;
     } else if (msg.action === 'show_rest_overlay') {
       try {
-        console.log('[Leader] Showing rest overlay from popup');
         showRestOverlay(msg.data);
         sendResponse({ success: true, message: 'Rest overlay displayed' });
       } catch (error) {
@@ -556,7 +736,14 @@
       eventSource.close();
       eventSource = null;
     }
-  });
 
-  console.log('[Leader] Content script loaded');
+    // まばたき検知を停止
+    stopBlinkDetection();
+
+    // Socket.IO接続を切断
+    if (socket) {
+      socket.disconnect();
+      socket = null;
+    }
+  });
 })();

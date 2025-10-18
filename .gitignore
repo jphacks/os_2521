@@ -7,3 +7,5 @@ node_modules/
 
 # 自動生成されるファイル
 extensions/member/config.js
+
+/.claude
