@@ -12,7 +12,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       return;
     }
 
-    const apiBase = 'https://pure-elegance-production.up.railway.app';
+    // chrome.storage から API URL を取得（popup.js で設定される）
+    const storage = await chrome.storage.local.get(['apiUrl']);
+    const apiBase = storage.apiUrl || 'http://localhost:8000';
     const url = `${apiBase.replace(/\/$/, '')}/api/meetings/${encodeURIComponent(meetingId)}/start`;
 
     try {
@@ -59,7 +61,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       return;
     }
 
-    const apiBase = 'https://pure-elegance-production.up.railway.app';
+    // chrome.storage から API URL を取得（popup.js で設定される）
+    const storage = await chrome.storage.local.get(['apiUrl']);
+    const apiBase = storage.apiUrl || 'http://localhost:8000';
     const url = `${apiBase.replace(/\/$/, '')}/api/meetings/${encodeURIComponent(meetingId)}/end`;
 
     try {

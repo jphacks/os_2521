@@ -1,6 +1,6 @@
 # ひとやすみ通信
 
-[![IMAGE ALT TEXT HERE](https://jphacks.com/wp-content/uploads/2025/05/JPHACKS2025_ogp.jpg)](https://www.youtube.com/watch?v=lA9EluZugD8)
+<div align="center"> <h2>🚀 今すぐチェック！</h2> <p> <a href="https://drive.google.com/drive/folders/1pl616xqFoKouzJhqzKthTeSI5dReDHfI" target="_blank"><strong>📁 すべてのデモ・概要動画・.env はこの Google Drive にまとまっています</strong></a> <br/> <sub>（審査はまずここを開けばOK）</sub> </p> <p> <a href="https://drive.google.com/drive/folders/1pl616xqFoKouzJhqzKthTeSI5dReDHfI" target="_blank"><img alt="Demo" src="https://img.shields.io/badge/▶️%20Demo-90sec-blue?style=for-the-badge"></a> &nbsp; <a href="https://drive.google.com/drive/folders/1pl616xqFoKouzJhqzKthTeSI5dReDHfI" target="_blank"><img alt="Overview" src="https://img.shields.io/badge/▶️%20Overview-Project%20video-purple?style=for-the-badge"></a> </p> <hr style="width: 80%;"> <h3>📄 .env（拡張機能で<strong>必須</strong>）</h3> <p> <a href="https://drive.google.com/drive/folders/1pl616xqFoKouzJhqzKthTeSI5dReDHfI" target="_blank"><strong>.env の場所（Drive内）</strong></a><br/> <em>※ ルート直下に配置後、<code>node scripts/build-config.js</code> を実行して拡張機能が動作します。必ずご確認ください。</em> </p> </div> ::contentReference[oaicite:0]{index=0}
 
 ## 製品概要
 ### 背景(製品開発のきっかけ、課題等）
@@ -49,7 +49,7 @@
 - Redis Pub/Subによるイベント配信
 - 個人を特定しない匿名システム
 
-#### ユースケース図
+### ユースケース図
 
 ```mermaid
 sequenceDiagram
@@ -72,9 +72,9 @@ sequenceDiagram
     end
 
     Note over L,S: Phase 3: 自動疲労判定
-    L->>L: まばたき回数チェック<br/>（60秒間で1回以下？）
+    L->>L: まばたき回数チェック<br/>（60秒間で20回以上）
 
-    alt まばたき回数 ≤ 1
+    alt まばたき回数 ≥ 20
         Note over L,R: Phase 4: 休憩トリガー
         L->>S: REST API: POST /api/meetings/{id}/rest
         S->>R: SETEX rest_flg=true (TTL: 60分)
@@ -104,28 +104,26 @@ sequenceDiagram
 ### 解決出来ること
 
 - **長時間のオンライン会議による疲労や集中力低下を軽減**: 客観的指標に基づく自動休憩提案
-- **休憩を言い出しづらい環境でも、匿名提案により心理的負担を緩和**: 誰でも気軽に休憩を提案可能
-- **科学的根拠に基づいた「最適な休憩タイミング」の提示**: EARアルゴリズムによる疲労判定
+- **休憩を切り出しづらい環境でも、匿名提案により心理的負担を緩和**: 誰でも気軽に休憩を提案可能
+- **客観敵根拠に基づいた「最適な休憩タイミング」の提示**: EARアルゴリズムによる疲労判定
 - **リモートワーク環境における健康的で持続可能な働き方の支援**: 会議の生産性向上と参加者の健康維持
 - **会議中の疲労の蓄積を防止**: 1分ごとの参加者巡回監視により全員の状態を把握
 - **適切なタイミングでの休憩促進**: 自動判定とリアルタイム通知による即座の対応
 
 ### 今後の展望
 
-- **機械学習モデルの導入**: TensorFlow.jsによる高度な疲労度判定
-- **個人別疲労度ダッシュボード**: 会議ごとの疲労度推移グラフと統計分析
+- **機械学習モデルの導入**: 根拠としてリモートワーク中の音声を解析して集中的かどうかの高度な根拠疲労度判定
+- **個人別疲労度ダッシュボード**: 会議・メンバーごとの疲労度推移グラフと統計分析
 - **Slack/Discord通知連携**: 外部サービスとの統合
-- **複数会議の同時管理**: エンタープライズ向け機能拡張
 - **カスタマイズ可能なしきい値設定UI**: ユーザーごとの疲労基準調整
 
 ### 注力したこと（こだわり等）
 
-- **科学的根拠に基づくアルゴリズム**: EAR（Eye Aspect Ratio）による客観的な疲労判定
-- **心理的ハードルを下げるUI/UX**: 手紙型のやわらかい演出と匿名性の確保
+- **客観敵根拠に基づくアルゴリズム**: EAR（Eye Aspect Ratio）による客観的な疲労判定
+- **心理的ハードルを下げるUI/UX**: 匿名性確保と客観的指標に基づく休憩の自動化
 - **リアルタイム性の追求**: Socket.IOとSSEを組み合わせたハイブリッド型通信
 - **プライバシー保護**: 画像データはサーバーに保存せず、検知結果（true/false）のみを記録
 - **参加者全員の公平な監視**: 1分ごとのローテーションにより全員を順番に検知
-- **無料で運用可能**: Railwayの無料枠（$5相当/月）で完全無料運用
 
 ## 開発技術
 ### 活用した技術
@@ -153,7 +151,7 @@ flowchart TB
     REST[REST API]
     SSE_SRV[SSE Server]
     SOCK[Socket.IO Server<br/>analyze_blink_image]
-    BLINK[まばたき検知<br/>ランダムモック]
+    BLINK[まばたき検知]
   end
 
   subgraph Data[Redis]
@@ -236,8 +234,6 @@ PSUBSCRIBE meeting:*:rest
 **通信プロトコル:**
 - **Server-Sent Events (SSE)**: サーバーからクライアントへのリアルタイムイベント配信（ハートビート30秒間隔）
 - **Socket.IO**: WebSocketベースの双方向リアルタイム通信（画像送信とまばたき検知結果の返信）
-  - Transport: Polling（WebSocketは403エラー回避のため無効化）
-  - CORS: 全オリジン許可
 - **Redis Pub/Sub**: イベント配信（meeting:{meeting_id}:rest チャンネル）
 - **Redis KVS**: 会議状態管理（rest_flg、started_at等、TTL設定で自動削除）
 
@@ -263,7 +259,7 @@ PSUBSCRIBE meeting:*:rest
 
 **将来実装予定:**
 - MediaPipe Face Mesh（まばたき検知精度向上）
-- TensorFlow.js（機械学習ベースの疲労判定）
+- HuBERT / WavLM（SSL）,wav2vec 2.0（音声表現を加えたの疲労判定）
 
 #### デバイス
 

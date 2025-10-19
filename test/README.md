@@ -4,10 +4,25 @@
 
 ## 使い方
 
+### 0. 設定ファイルを生成（初回のみ）
+
+テストコンソールを使用する前に、`.env`から`config.js`を生成する必要があります。
+
+```bash
+# プロジェクトルートで実行
+cd ..
+
+# .envファイルが存在することを確認（GoogleDrive参照）
+# config.jsを生成（test/config.js が自動生成されます）
+node scripts/build-config.js
+```
+
+**重要**: `.env`ファイルに`DEFAULT_API_URL`が設定されている必要があります。
+
 ### 1. サーバーを起動
 
 ```bash
-cd ..
+# プロジェクトルートで実行
 docker-compose up -d
 ```
 
@@ -52,11 +67,14 @@ open test/index.html
 
 #### Railwayにデプロイした環境でテスト
 
-1. **API URLを変更**: `https://your-app.up.railway.app`（Railwayのデプロイ先URL）
-2. **Member拡張機能のAPI URLも変更**:
-   - `extensions/member/content.js` の `API_BASE_URL` を変更
-   - 拡張機能を再読み込み
-3. 上記のローカル環境と同じ手順でテスト
+1. **config.jsの確認**:
+   - `.env`ファイルの`DEFAULT_API_URL`がRailwayのデプロイ先URLに設定されていることを確認
+   - `node scripts/build-config.js`を実行して`config.js`を再生成
+2. **テストコンソールを開く**: ブラウザで`test/index.html`を開き直す
+3. **API URLプリセットから選択**:
+   - 「🚀 RAILWAY」ボタンをクリック（config.jsから自動設定されます）
+   - または、手動で入力する場合は「✏️ 自由記述」をクリック
+4. 上記のローカル環境と同じ手順でテスト
 
 **注意**: API URLは自動的にローカルストレージに保存されるため、次回開いたときに自動的に復元されます。
 
@@ -67,6 +85,17 @@ open test/index.html
 - **サーバー起動確認**: テストコンソールを開くと自動的にサーバーのヘルスチェックが実行されます
 
 ## トラブルシューティング
+
+### config.jsが見つからないエラー
+
+ブラウザのコンソールに「config.js が見つかりません」と表示される場合：
+
+```bash
+# プロジェクトルートで実行
+node scripts/build-config.js
+```
+
+その後、ブラウザで`test/index.html`を再読み込みしてください。
 
 ### 休憩オーバーレイが表示されない
 

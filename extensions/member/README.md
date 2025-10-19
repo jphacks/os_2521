@@ -11,14 +11,13 @@ Google Meet会議中に休憩通知を受信してオーバーレイUIを表示�
 1. プロジェクトルートの `.env` ファイルを編集:
 
 ```bash
-DEFAULT_API_URL=https://pure-elegance-production.up.railway.app
+DEFAULT_API_URL=https://your-app.up.railway.app
 ```
 
-2. ルートディレクトリで以下を実行:
+2. プロジェクトルートディレクトリで以下を実行:
 
 ```bash
-cd C:\Users\kouse\JPHACK\os_2521
-npm run build:config
+node scripts/build-config.js
 ```
 
 3. `extensions/member/config.js` が自動生成されます
@@ -32,7 +31,7 @@ cp .env.example .env
 # DEFAULT_API_URL=https://your-app.up.railway.app
 
 # config.jsを生成
-npm run build:config
+node scripts/build-config.js
 ```
 
 #### 方法2: ポップアップで動的に変更

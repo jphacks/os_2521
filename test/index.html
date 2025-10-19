@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Meeting Rest System - Test Console</title>
+  <!-- 設定ファイル読み込み（.envから自動生成） -->
+  <script src="config.js"></script>
   <style>
     * {
       margin: 0;
@@ -372,10 +374,17 @@
   </div>
 
   <script>
-    // config.jsから読み込んだ設定（存在する場合）
+    // config.jsから読み込んだ設定
+    // config.jsが存在しない場合はエラーメッセージを表示
+    if (!window.MEETING_REST_CONFIG) {
+      console.error('[Test Console] config.js が見つかりません。');
+      console.error('[Test Console] 以下のコマンドを実行してconfig.jsを生成してください:');
+      console.error('[Test Console] node scripts/build-config.js');
+    }
+
     const RAILWAY_URL = window.MEETING_REST_CONFIG
       ? window.MEETING_REST_CONFIG.DEFAULT_API_URL
-      : 'https://pure-elegance-production.up.railway.app';
+      : 'http://localhost:8000';
 
     function getApiUrl() {
       const input = document.getElementById('apiUrl');

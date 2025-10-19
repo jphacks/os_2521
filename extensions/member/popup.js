@@ -12,7 +12,7 @@
   // config.jsから読み込んだ設定（存在する場合）
   const RAILWAY_URL = window.MEETING_REST_CONFIG
     ? window.MEETING_REST_CONFIG.DEFAULT_API_URL
-    : 'https://pure-elegance-production.up.railway.app';
+    : 'http://localhost:8000';
 
   // プリセット状態を保存
   function saveUrlPreset(type) {

@@ -4,9 +4,39 @@
 
 ## 設定方法
 
-### config.jsでのURL設定
+### API URLの設定
 
-`config.js`ファイルでサーバーURLを管理します：
+#### 方法1: .envファイルから自動生成（推奨）
+
+1. プロジェクトルートの `.env` ファイルを編集:
+
+```bash
+DEFAULT_API_URL=https://your-app.up.railway.app
+```
+
+2. プロジェクトルートディレクトリで以下を実行:
+
+```bash
+node scripts/build-config.js
+```
+
+3. `extensions/leader/config.js`、`extensions/member/config.js`、`test/config.js` が自動生成されます
+
+**初回セットアップ時**:
+```bash
+# .env.example をコピー（存在する場合）
+cp .env.example .env
+
+# .env を編集してRailway URLを設定
+# DEFAULT_API_URL=https://your-app.up.railway.app
+
+# config.jsを生成
+node scripts/build-config.js
+```
+
+#### 方法2: config.jsを手動編集
+
+`config.js`ファイルを直接編集してサーバーURLを管理します：
 
 ```javascript
 window.MEETING_REST_CONFIG = {
@@ -17,6 +47,8 @@ window.MEETING_REST_CONFIG = {
   LOCAL_API_URL: 'http://localhost:8000'
 };
 ```
+
+**注意**: 方法1を使用した場合、config.jsは自動生成されるため手動編集は推奨されません。
 
 ### URLプリセットボタン
 

@@ -13,7 +13,9 @@ const path = require('path');
 // パス設定
 const rootDir = path.join(__dirname, '..');
 const envPath = path.join(rootDir, '.env');
-const configPath = path.join(rootDir, 'extensions', 'member', 'config.js');
+const memberConfigPath = path.join(rootDir, 'extensions', 'member', 'config.js');
+const leaderConfigPath = path.join(rootDir, 'extensions', 'leader', 'config.js');
+const testConfigPath = path.join(rootDir, 'test', 'config.js');
 
 console.log('[Build Config] Starting...');
 
@@ -60,9 +62,9 @@ if (!defaultApiUrl) {
 
 console.log('[Build Config] API URL:', defaultApiUrl);
 
-// config.jsを生成
-const configContent = `// このファイルは自動生成されます
-// 編集する場合は .env ファイルを変更して npm run build:config を実行してください
+// Member用のconfig.jsを生成
+const memberConfigContent = `// このファイルは自動生成されます
+// 編集する場合は .env ファイルを変更して node scripts/build-config.js を実行してください
 
 // API設定
 const CONFIG = {
@@ -74,7 +76,47 @@ const CONFIG = {
 window.MEETING_REST_CONFIG = CONFIG;
 `;
 
-fs.writeFileSync(configPath, configContent, 'utf-8');
-console.log('[Build Config] config.js generated successfully!');
-console.log('[Build Config] Output:', configPath);
+// Leader用のconfig.jsを生成
+const leaderConfigContent = `// ひとやすみ通信 - Leader設定ファイル
+// このファイルは自動生成されます
+// 編集する場合は .env ファイルを変更して node scripts/build-config.js を実行してください
+
+window.MEETING_REST_CONFIG = {
+  // Railway本番環境のURL（.envから自動生成）
+  DEFAULT_API_URL: '${defaultApiUrl}',
+
+  // ローカル開発環境のURL
+  LOCAL_API_URL: 'http://localhost:8000'
+};
+`;
+
+// Test用のconfig.jsを生成
+const testConfigContent = `// Meeting Rest System - Test Console設定ファイル
+// このファイルは自動生成されます
+// 編集する場合は .env ファイルを変更して node scripts/build-config.js を実行してください
+
+window.MEETING_REST_CONFIG = {
+  // Railway本番環境のURL（.envから自動生成）
+  DEFAULT_API_URL: '${defaultApiUrl}',
+
+  // ローカル開発環境のURL
+  LOCAL_API_URL: 'http://localhost:8000'
+};
+`;
+
+// Member用を生成
+fs.writeFileSync(memberConfigPath, memberConfigContent, 'utf-8');
+console.log('[Build Config] Member config.js generated successfully!');
+console.log('[Build Config] Output:', memberConfigPath);
+
+// Leader用を生成
+fs.writeFileSync(leaderConfigPath, leaderConfigContent, 'utf-8');
+console.log('[Build Config] Leader config.js generated successfully!');
+console.log('[Build Config] Output:', leaderConfigPath);
+
+// Test用を生成
+fs.writeFileSync(testConfigPath, testConfigContent, 'utf-8');
+console.log('[Build Config] Test config.js generated successfully!');
+console.log('[Build Config] Output:', testConfigPath);
+
 console.log('[Build Config] Done!');
