@@ -1,13 +1,13 @@
 # ひとやすみ通信
 
-<div align="center"> <h2>🚀 今すぐチェック！</h2> <p> <a href="https://drive.google.com/drive/folders/1pl616xqFoKouzJhqzKthTeSI5dReDHfI" target="_blank"><strong>📁 すべてのデモ・概要動画・.env はこの Google Drive にまとまっています</strong></a> <br/> <sub>（審査はまずここを開けばOK）</sub> </p> <p> <a href="https://drive.google.com/drive/folders/1pl616xqFoKouzJhqzKthTeSI5dReDHfI" target="_blank"><img alt="Demo" src="https://img.shields.io/badge/▶️%20Demo-90sec-blue?style=for-the-badge"></a> &nbsp; <a href="https://drive.google.com/drive/folders/1pl616xqFoKouzJhqzKthTeSI5dReDHfI" target="_blank"><img alt="Overview" src="https://img.shields.io/badge/▶️%20Overview-Project%20video-purple?style=for-the-badge"></a> </p> <hr style="width: 80%;"> <h3>📄 .env（拡張機能で<strong>必須</strong>）</h3> <p> <a href="https://drive.google.com/drive/folders/1pl616xqFoKouzJhqzKthTeSI5dReDHfI" target="_blank"><strong>.env の場所（Drive内）</strong></a><br/> <em>※ ルート直下に配置後、<code>node scripts/build-config.js</code> を実行して拡張機能が動作します。必ずご確認ください。</em> </p> </div> ::contentReference[oaicite:0]{index=0}
+<div align="center"> <h2>🚀 今すぐチェック！</h2> <p> <a href="https://drive.google.com/drive/folders/1pl616xqFoKouzJhqzKthTeSI5dReDHfI" target="_blank"><strong>📁 すべてのデモ・概要動画・.env はこの Google Drive にまとまっています</strong></a> <br/> <sub>（審査はまずここを開けばOK）</sub> </p> <p> <a href="https://drive.google.com/drive/folders/1pl616xqFoKouzJhqzKthTeSI5dReDHfI" target="_blank"><img alt="Demo" src="https://img.shields.io/badge/▶️%20Demo-90sec-blue?style=for-the-badge"></a> &nbsp; <a href="https://drive.google.com/drive/folders/1pl616xqFoKouzJhqzKthTeSI5dReDHfI" target="_blank"><img alt="Overview" src="https://img.shields.io/badge/▶️%20Overview-Project%20video-purple?style=for-the-badge"></a> </p> <hr style="width: 80%;"> <h3>📄 .env（拡張機能で<strong>必須</strong>）</h3> <p> <a href="https://drive.google.com/drive/folders/1pl616xqFoKouzJhqzKthTeSI5dReDHfI" target="_blank"><strong>.env の場所（Drive内）</strong></a><br/> <em>※ ルート直下に配置後、<code>node scripts/build-config.js</code> を実行して拡張機能が動作します。必ずご確認ください。</em> </p> </div>
 
 ## 製品概要
 ### 背景(製品開発のきっかけ、課題等）
 
-リモートワークが普及する中で、オンライン会議の長時間化や休憩不足が問題となっています。特に会議中に疲れを感じても「言い出しにくい」「」といった心理的ハードルがあり、結果として集中力の低下や健康リスクを引き起こすケースが増えています。
+リモートワークが普及する中で、オンライン会議の長時間化や休憩不足が問題となっています。特にリモートワーク中に疲れを感じても「切り出しにくい」といった心理的ハードルがあり、結果として集中力の低下や健康リスクを引き起こすケースが増えています。
 
-長時間のオンライン会議では、参加者が疲労していても休憩を取りづらい状況があります。個人の判断で休憩を取ることが難しく、会議の生産性が低下してしまう問題に着目しました。そこで、科学的根拠に基づき、誰もが自然に休憩を取れる仕組みを目指して本アプリを開発しました。
+長時間のオンライン会議では、参加者が疲労していても休憩を取りづらい状況があります。個人の判断で休憩を切り出すことが難しく、生産性の低下、疲労度の上昇の問題に着目しました。そこで、科学的根拠に基づき、誰もが自然に休憩を取れる仕組みを目指して本アプリを開発しました。
 
 ### 製品説明（具体的な製品の説明）
 
