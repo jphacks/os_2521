@@ -185,143 +185,135 @@
   /**
    * 休憩オーバーレイUIを表示（ウィンドウ全体をブロック）
    */
-  function showRestOverlay(data) {
-    // 既にオーバーレイが表示されている場合はスキップ
-    if (overlayElement && document.body.contains(overlayElement)) {
-      console.log('[Member] Overlay already shown');
-      return;
-    }
+  function showRestOverlay(data = {}) {
+    if (overlayElement && document.body.contains(overlayElement)) return;
 
-    console.log('[Member] Showing rest overlay - BLOCKING MODE');
-
-    // オーバーレイ要素を作成
     overlayElement = document.createElement('div');
     overlayElement.id = 'meeting-rest-overlay';
     overlayElement.innerHTML = `
       <div style="
         position: fixed;
-        top: 0;
-        left: 0;
+        inset: 0;
         width: 100vw;
         height: 100vh;
-        background: rgba(0, 0, 0, 0.98);
         z-index: 2147483647;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-family: 'Google Sans', 'Roboto', sans-serif;
-        animation: fadeIn 0.3s ease-in-out;
+        background: rgba(0,0,0,0.3); /* 画面を少し暗く透過 */
         pointer-events: all;
         user-select: none;
+        backdrop-filter: blur(4px); /* ここを追加 */
       ">
-        <div style="
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          padding: 80px 100px;
-          border-radius: 20px;
-          text-align: center;
-          box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7);
-          max-width: 700px;
-          user-select: none;
-        ">
-          <div style="font-size: 96px; margin-bottom: 30px; animation: bounce 2s infinite;">☕</div>
-          <h1 style="
-            font-size: 56px;
-            font-weight: 700;
-            color: white;
-            margin: 0 0 30px 0;
-            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.4);
-            user-select: none;
-          ">休憩時間です</h1>
-          <p style="
-            font-size: 22px;
-            color: rgba(255, 255, 255, 0.95);
-            margin: 0 0 50px 0;
-            line-height: 1.8;
-            user-select: none;
-          ">
-            ${data.message || '少し休憩して、リフレッシュしましょう'}
-          </p>
-          <button id="meeting-rest-ok-btn" style="
-            background: white;
-            color: #667eea;
-            border: none;
-            padding: 20px 60px;
-            font-size: 20px;
-            font-weight: 700;
-            border-radius: 40px;
-            cursor: pointer;
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
-            transition: all 0.3s ease;
-            user-select: none;
-          " onmouseover="this.style.transform='scale(1.1)'; this.style.boxShadow='0 8px 20px rgba(0, 0, 0, 0.4)';" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 6px 16px rgba(0, 0, 0, 0.3)';">
-            OK
-          </button>
+        <div class="overlay-card">
+          <svg class="mail-icon" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="15" y="30" width="90" height="60" rx="8" fill="#ffffffff" stroke="#6B9E7E" stroke-width="3"/>
+            <path d="M15 35 L60 65 L105 35" stroke="#6B9E7E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <path d="M15 35 L60 65 L105 35" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+          <h1 class="title">ひとやすみ通信</h1>
+          <p class="subtitle">休憩のお知らせが届きました</p>
+          <div class="message-box">
+            <p class="message-text">
+              ${data.message || '会議が長くなってきました🌱<br>少し休憩して、リフレッシュしましょう'}
+            </p>
+          </div>
+          <button class="button" id="meeting-rest-ok-btn">わかりました 🌸</button>
+          <div class="footer-message">
+            <span>🌿</span>
+            <span>心と体を大切に</span>
+            <span>🌿</span>
+          </div>
         </div>
       </div>
     `;
 
-    // フェードインアニメーション用のスタイルを追加
+    // CSSを追加
     const style = document.createElement('style');
     style.textContent = `
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-          transform: scale(0.9);
-        }
-        to {
-          opacity: 1;
-          transform: scale(1);
-        }
+      .overlay-card {
+        background: #FFFEF9;
+        border: 3px solid #8BC4A8;
+        border-radius: 32px;
+        padding: 40px;
+        max-width: 420px;
+        width: 90%;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        text-align: center;
       }
-      @keyframes fadeOut {
-        from {
-          opacity: 1;
-          transform: scale(1);
-        }
-        to {
-          opacity: 0;
-          transform: scale(0.9);
-        }
+      .mail-icon {
+        width: 120px;
+        height: 120px;
+        margin: 0 auto 24px;
+        animation: gentle-bounce 3s ease-in-out infinite;
       }
-      @keyframes bounce {
-        0%, 100% {
-          transform: translateY(0);
-        }
-        50% {
-          transform: translateY(-20px);
-        }
+      @keyframes gentle-bounce {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-8px); }
       }
-      /* すべてのマウスイベントをブロック */
-      body.rest-overlay-active {
-        overflow: hidden !important;
-        pointer-events: none !important;
+      .title {
+        font-size: 32px;
+        font-weight: 600;
+        color: #6B9E7E;
+        margin-bottom: 12px;
+        letter-spacing: 2px;
       }
-      #meeting-rest-overlay {
-        pointer-events: all !important;
+      .subtitle {
+        font-size: 16px;
+        color: #8B7355;
+        margin-bottom: 24px;
       }
+      .message-box {
+        background: #FFF5E6;
+        border-left: 4px solid #E8B4A0;
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 28px;
+        text-align: left;
+      }
+      .message-text {
+        font-size: 15px;
+        color: #6B5D4F;
+        line-height: 1.8;
+      }
+      .button {
+        background: #A8D5BA;
+        color: white;
+        border: none;
+        border-radius: 50px;
+        padding: 16px 48px;
+        font-size: 18px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(168, 213, 186, 0.3);
+      }
+      .button:hover {
+        background: #92C5A7;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(168, 213, 186, 0.4);
+      }
+      .button:active {
+        transform: translateY(0);
+      }
+      .footer-message {
+        margin-top: 20px;
+        font-size: 13px;
+        color: #A8B5A0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+      }
+      body.rest-overlay-active { overflow: hidden !important; pointer-events: none !important; }
+      #meeting-rest-overlay { pointer-events: all !important; }
     `;
     document.head.appendChild(style);
 
-    // bodyにクラスを追加してスクロールを無効化
     document.body.classList.add('rest-overlay-active');
-
-    // OKボタンのクリックイベント
     document.body.appendChild(overlayElement);
-    const okButton = document.getElementById('meeting-rest-ok-btn');
-    okButton.addEventListener('click', hideRestOverlay);
 
-    // Escキーでも閉じられないようにする
-    const preventEscape = (e) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-    };
-    document.addEventListener('keydown', preventEscape, true);
-    overlayElement._preventEscape = preventEscape;
-
-    // 音声通知（オプション）
-    playNotificationSound();
+    document.getElementById('meeting-rest-ok-btn')?.addEventListener('click', hideRestOverlay);
   }
 
   /**
@@ -329,26 +321,11 @@
    */
   function hideRestOverlay() {
     if (!overlayElement) return;
-
-    console.log('[Member] Hiding rest overlay');
-
-    // Escキーイベントリスナーを削除
-    if (overlayElement._preventEscape) {
-      document.removeEventListener('keydown', overlayElement._preventEscape, true);
-    }
-
-    // bodyのクラスを削除
     document.body.classList.remove('rest-overlay-active');
-
-    // フェードアウトアニメーション
-    overlayElement.style.animation = 'fadeOut 0.3s ease-in-out';
-
-    setTimeout(() => {
-      if (overlayElement && document.body.contains(overlayElement)) {
-        document.body.removeChild(overlayElement);
-        overlayElement = null;
-      }
-    }, 300);
+    if (overlayElement && document.body.contains(overlayElement)) {
+      document.body.removeChild(overlayElement);
+      overlayElement = null;
+    }
   }
 
   /**

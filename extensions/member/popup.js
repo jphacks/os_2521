@@ -4,6 +4,7 @@
   const urlHint = document.getElementById('url-hint');
   const statusDot = document.getElementById('status-dot');
   const statusText = document.getElementById('status-text');
+  const statusElement = document.querySelector('.status');
   const connectBtn = document.getElementById('connect-btn');
   const disconnectBtn = document.getElementById('disconnect-btn');
   const requestRestBtn = document.getElementById('request-rest-btn');
@@ -74,8 +75,20 @@
 
   // ステータスを更新
   function updateStatus(status, text) {
-    statusDot.className = 'indicator-dot ' + status;
+    // ドットのクラスを更新
+    statusDot.className = 'status__indicator';
+    if (status) {
+      statusDot.classList.add(status);
+    }
+
+    // テキストを更新
     statusText.textContent = text;
+
+    // ステータス背景色を更新
+    statusElement.className = 'status';
+    if (status) {
+      statusElement.classList.add(status);
+    }
   }
 
   // 初期化

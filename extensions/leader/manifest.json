@@ -1,11 +1,24 @@
 {
   "manifest_version": 3,
-  "name": "Meet Multi-Video Tap (Popup)",
+  "name": "ひとやすみ通信 - Leader",
   "version": "0.5.0",
-  "description": "拡張ボタン→ポップアップ内でStart/Stop。Meetページ内の全videoをサムネ表示。休憩通知システム対応。",
+  "description": "リモート会議に、やわらかな休憩を。まばたき検知で参加者の疲労をモニタリング。",
   "permissions": ["activeTab", "scripting", "storage"],
   "host_permissions": ["https://meet.google.com/*"],
-  "action": { "default_popup": "popup.html", "default_title": "Meet Multi-Video Tap" },
+  "icons": {
+    "16": "image.png",
+    "48": "image.png",
+    "128": "image.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "ひとやすみ通信 - Leader",
+    "default_icon": {
+      "16": "image.png",
+      "48": "image.png",
+      "128": "image.png"
+    }
+  },
   "background": {
     "service_worker": "background.js",
     "type": "module"
@@ -13,7 +26,7 @@
   "content_scripts": [
     {
       "matches": ["https://meet.google.com/*"],
-      "js": ["socket.io.min.js", "content.js"],
+      "js": ["config.js", "socket.io.min.js", "content.js"],
       "run_at": "document_idle"
     }
   ]

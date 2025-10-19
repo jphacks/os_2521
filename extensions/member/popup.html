@@ -3,7 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>休憩通知システム - Member</title>
+  <title>ひとやすみ通信 - Member</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     * {
       margin: 0;
@@ -11,262 +14,427 @@
       box-sizing: border-box;
     }
 
+    :root {
+      --color-primary: #EC407A;
+      --color-primary-dark: #C2185B;
+      --color-primary-light: #F8BBD0;
+      --color-accent-warm: #FFB74D;
+      --color-accent-pink: #F8BBD0;
+      --color-neutral-bg: #FFFBF5;
+      --color-neutral-light: #F5F1E8;
+      --color-text-primary: #333333;
+      --color-text-secondary: #666666;
+      --color-success: #4CAF50;
+      --color-warning: #FFC107;
+      --color-error: #F44336;
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
+    }
+
     body {
-      width: 320px;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      padding: 16px;
-      background: #f9f9f9;
+      width: 380px;
+      font-family: 'Noto Sans JP', sans-serif;
+      background: linear-gradient(135deg, var(--color-neutral-bg) 0%, var(--color-accent-pink) 100%);
+      color: var(--color-text-primary);
+      line-height: 1.6;
+      padding: 0;
+      margin: 0;
     }
 
-    h1 {
-      font-size: 16px;
-      font-weight: 600;
-      color: #333;
+    /* ===== ヘッダー ===== */
+    .header {
+      background: linear-gradient(135deg, var(--color-accent-pink) 0%, var(--color-primary) 100%);
+      padding: 20px;
+      text-align: center;
+      box-shadow: var(--shadow-md);
+    }
+
+    .header__title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: white;
       margin-bottom: 4px;
+      letter-spacing: 0.5px;
     }
 
-    .subtitle {
-      font-size: 11px;
-      color: #999;
-      margin-bottom: 16px;
+    .header__subtitle {
+      font-size: 0.75rem;
+      color: rgba(255, 255, 255, 0.9);
+      font-weight: 500;
+      letter-spacing: 0.3px;
     }
 
+    /* ===== コンテナ ===== */
+    .container {
+      padding: 16px;
+    }
+
+    /* ===== カード ===== */
+    .card {
+      background: white;
+      border-radius: var(--radius-md);
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: var(--shadow-sm);
+      border: 2px solid transparent;
+      transition: all 0.3s ease;
+    }
+
+    .card:hover {
+      border-color: var(--color-accent-pink);
+      box-shadow: var(--shadow-md);
+    }
+
+    .card__title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--color-text-secondary);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .card__icon {
+      font-size: 1rem;
+    }
+
+    /* ===== フォーム ===== */
     .form-group {
-      margin-bottom: 16px;
+      margin-bottom: 12px;
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
     }
 
     label {
       display: block;
-      font-size: 12px;
+      font-size: 0.75rem;
       font-weight: 600;
-      color: #555;
+      color: var(--color-text-secondary);
       margin-bottom: 6px;
     }
 
     input[type="text"] {
       width: 100%;
-      padding: 8px 12px;
+      padding: 10px 12px;
       border: 2px solid #e0e0e0;
-      border-radius: 6px;
-      font-size: 12px;
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
       font-family: 'Courier New', monospace;
-      transition: border-color 0.3s;
+      transition: all 0.3s ease;
+      background: white;
     }
 
     input[type="text"]:focus {
       outline: none;
-      border-color: #667eea;
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(236, 64, 122, 0.1);
     }
 
     .hint {
-      font-size: 10px;
-      color: #999;
+      font-size: 0.7rem;
+      color: var(--color-text-secondary);
       margin-top: 4px;
-    }
-
-    .status-box {
-      background: white;
-      border-radius: 8px;
-      padding: 12px;
-      margin-bottom: 16px;
-      border: 1px solid #e0e0e0;
-    }
-
-    .status-title {
-      font-size: 11px;
-      font-weight: 600;
-      color: #555;
-      margin-bottom: 8px;
-    }
-
-    .status-indicator {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .indicator-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: #999;
-    }
-
-    .indicator-dot.connected {
-      background: #4caf50;
-    }
-
-    .indicator-dot.connecting {
-      background: #ffc107;
-    }
-
-    .indicator-dot.error {
-      background: #f44336;
-    }
-
-    .status-text {
-      font-size: 11px;
-      color: #666;
-    }
-
-    button {
-      width: 100%;
-      padding: 10px;
-      border: none;
-      border-radius: 8px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      margin-bottom: 8px;
-    }
-
-    .btn-connect {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-    }
-
-    .btn-connect:hover {
-      opacity: 0.9;
-    }
-
-    .btn-disconnect {
-      background: #f5f5f5;
-      color: #666;
-    }
-
-    .btn-disconnect:hover {
-      background: #e0e0e0;
-    }
-
-    .btn-disconnect:disabled,
-    .btn-connect:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .info-box {
-      background: #e3f2fd;
-      border-left: 3px solid #1976d2;
-      padding: 10px;
-      border-radius: 4px;
-      font-size: 11px;
-      color: #1565c0;
       line-height: 1.4;
     }
 
-    .url-preset-buttons {
+    /* ===== プリセットボタン ===== */
+    .preset-buttons {
       display: flex;
       gap: 6px;
       margin-bottom: 8px;
     }
 
     .btn-preset {
-      padding: 6px 12px;
+      flex: 1;
+      padding: 8px 10px;
       border: 2px solid #e0e0e0;
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       background: white;
-      color: #667eea;
-      font-size: 11px;
+      color: var(--color-text-secondary);
+      font-size: 0.7rem;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.2s ease;
-      flex: 1;
+      font-family: 'Noto Sans JP', sans-serif;
     }
 
     .btn-preset:hover {
-      border-color: #667eea;
-      background: #f5f7ff;
-    }
-
-    .btn-preset:active {
-      transform: scale(0.98);
+      border-color: var(--color-primary);
+      background: var(--color-accent-pink);
+      color: var(--color-primary-dark);
     }
 
     .btn-preset.active {
-      background: #667eea;
+      background: var(--color-primary);
       color: white;
-      border-color: #667eea;
+      border-color: var(--color-primary);
     }
 
-    .btn-request-rest {
-      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    /* ===== ステータス表示 ===== */
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
+      background: #f5f5f5;
+      border-radius: var(--radius-sm);
+      transition: all 0.3s ease;
+    }
+
+    .status.connected {
+      background: linear-gradient(135deg, rgba(76, 175, 80, 0.15) 0%, rgba(76, 175, 80, 0.05) 100%);
+    }
+
+    .status.connecting {
+      background: linear-gradient(135deg, rgba(255, 193, 7, 0.15) 0%, rgba(255, 193, 7, 0.05) 100%);
+    }
+
+    .status.error {
+      background: linear-gradient(135deg, rgba(244, 67, 54, 0.15) 0%, rgba(244, 67, 54, 0.05) 100%);
+    }
+
+    .status__indicator {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #999;
+      flex-shrink: 0;
+      box-shadow: 0 0 0 3px rgba(153, 153, 153, 0.2);
+      transition: all 0.3s ease;
+    }
+
+    .status__indicator.connected {
+      background: var(--color-success);
+      box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+      animation: pulse 2s infinite;
+    }
+
+    .status__indicator.connecting {
+      background: var(--color-warning);
+      box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.2);
+    }
+
+    .status__indicator.error {
+      background: var(--color-error);
+      box-shadow: 0 0 0 3px rgba(244, 67, 54, 0.2);
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+      }
+      50% {
+        box-shadow: 0 0 0 6px rgba(76, 175, 80, 0.1);
+      }
+    }
+
+    .status__content {
+      flex: 1;
+    }
+
+    .status__text {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--color-text-primary);
+    }
+
+    .status__subtext {
+      font-size: 0.7rem;
+      color: var(--color-text-secondary);
+      margin-top: 2px;
+    }
+
+    /* ===== ボタン ===== */
+    button {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-family: 'Noto Sans JP', sans-serif;
+      letter-spacing: 0.3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
       color: white;
+      box-shadow: var(--shadow-sm);
     }
 
-    .btn-request-rest:hover {
-      opacity: 0.9;
+    .btn-primary:hover:not(:disabled) {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
     }
 
-    .btn-request-rest:disabled {
+    .btn-primary:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .btn-secondary {
+      background: white;
+      color: var(--color-text-secondary);
+      border: 2px solid #e0e0e0;
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      border-color: var(--color-primary);
+      background: var(--color-accent-pink);
+      color: var(--color-primary-dark);
+    }
+
+    .btn-request {
+      background: linear-gradient(135deg, #64B5F6 0%, #1976D2 100%);
+      color: white;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .btn-request:hover:not(:disabled) {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+    }
+
+    button:disabled {
       opacity: 0.5;
       cursor: not-allowed;
+    }
+
+    /* ===== インフォボックス ===== */
+    .info-box {
+      background: linear-gradient(135deg, rgba(236, 64, 122, 0.1) 0%, rgba(236, 64, 122, 0.05) 100%);
+      border-left: 3px solid var(--color-primary);
+      padding: 12px;
+      border-radius: var(--radius-sm);
+      font-size: 0.75rem;
+      color: #333;
+      line-height: 1.6;
+      margin-top: 12px;
+    }
+
+    .info-box strong {
+      color: #333;
+      font-weight: 700;
+    }
+
+    /* ===== スペーサー ===== */
+    .spacer {
+      height: 8px;
+    }
+
+    .spacer-lg {
+      height: 16px;
     }
   </style>
 </head>
 <body>
-  <h1>☕ 休憩通知システム</h1>
-  <p class="subtitle">Member - 休憩通知受信</p>
+  <!-- ===== ヘッダー ===== -->
+  <header class="header">
+    <h1 class="header__title">ひとやすみ通信✉️</h1>
+    <p class="header__subtitle">Member - 休憩通知受信</p>
+  </header>
 
-  <div class="form-group">
-    <label for="api-url-input">サーバー接続URL</label>
-    <div class="url-preset-buttons">
-      <button class="btn-preset" id="btn-local" data-preset="local">
-        🏠 LOCAL
-      </button>
-      <button class="btn-preset" id="btn-railway" data-preset="railway">
-        🚀 RAILWAY
-      </button>
-      <button class="btn-preset active" id="btn-custom" data-preset="custom">
-        ✏️ 自由記述
-      </button>
+  <main class="container">
+    <!-- ===== 接続設定 ===== -->
+    <div class="card">
+      <h2 class="card__title">
+        <span class="card__icon">🔌</span>
+        サーバー接続設定
+      </h2>
+
+      <div class="form-group">
+        <label for="api-url-input">接続先URL</label>
+        <div class="preset-buttons">
+          <button class="btn-preset" id="btn-local" data-preset="local">
+            🏠 LOCAL
+          </button>
+          <button class="btn-preset" id="btn-railway" data-preset="railway">
+            🚀 RAILWAY
+          </button>
+          <button class="btn-preset active" id="btn-custom" data-preset="custom">
+            ✏️ カスタム
+          </button>
+        </div>
+        <input
+          type="text"
+          id="api-url-input"
+          placeholder="http://localhost:8000"
+          value="http://localhost:8000"
+        />
+        <div class="hint">ローカル開発: localhost:8000 / 本番: Railway URL</div>
+      </div>
+
+      <div class="spacer"></div>
+
+      <div class="form-group">
+        <label for="meeting-id-input">Meeting ID（自動取得）</label>
+        <input
+          type="text"
+          id="meeting-id-input"
+          placeholder="abc-defg-hij"
+          readonly
+          style="background: #f5f5f5;"
+        />
+        <div class="hint" id="url-hint">Google Meet URLから自動取得します</div>
+      </div>
     </div>
-    <input
-      type="text"
-      id="api-url-input"
-      placeholder="例: http://localhost:8000 または https://your-app.up.railway.app"
-      value="http://localhost:8000"
-    />
-    <div class="hint">ローカル: http://localhost:8000 / Railway: デプロイURL</div>
-  </div>
 
-  <div class="form-group">
-    <label for="meeting-id-input">Meeting ID</label>
-    <input
-      type="text"
-      id="meeting-id-input"
-      placeholder="例: abc-defg-hij"
-    />
-    <div class="hint" id="url-hint">URLから自動取得: 取得中...</div>
-  </div>
+    <!-- ===== ステータス表示 ===== -->
+    <div class="card">
+      <h2 class="card__title">
+        <span class="card__icon">📡</span>
+        接続状態
+      </h2>
 
-  <div class="status-box">
-    <div class="status-title">接続状態</div>
-    <div class="status-indicator">
-      <div class="indicator-dot" id="status-dot"></div>
-      <div class="status-text" id="status-text">未接続</div>
+      <div class="status">
+        <div class="status__indicator" id="status-dot"></div>
+        <div class="status__content">
+          <div class="status__text" id="status-text">未接続</div>
+          <div class="status__subtext">設定を確認して接続してください</div>
+        </div>
+      </div>
     </div>
-  </div>
 
-  <button class="btn-connect" id="connect-btn">
-    🔌 接続開始
-  </button>
+    <!-- ===== コントロールボタン ===== -->
+    <button class="btn-primary" id="connect-btn">
+      <span>🚀</span>
+      <span>接続開始</span>
+    </button>
 
-  <button class="btn-disconnect" id="disconnect-btn" style="display: none;">
-    🔌 切断
-  </button>
+    <div class="spacer"></div>
 
-  <button class="btn-request-rest" id="request-rest-btn" disabled>
-    💤 休憩を希望する（匿名）
-  </button>
+    <button class="btn-secondary" id="disconnect-btn" style="display: none;">
+      <span>⏹️</span>
+      <span>切断</span>
+    </button>
 
-  <div class="info-box">
-    <strong>使い方:</strong><br>
-    1. Meeting IDを入力<br>
-    2. 「接続開始」をクリック<br>
-    3. リーダーから休憩通知が来ると画面に表示されます<br>
-    4. 休憩が必要な時は「休憩を希望する」ボタンで匿名リクエスト
-  </div>
+    <div class="spacer"></div>
+
+    <button class="btn-request" id="request-rest-btn" disabled>
+      <span>💤</span>
+      <span>休憩を希望する（匿名）</span>
+    </button>
+
+    <!-- ===== 使い方 ===== -->
+    <div class="info-box">
+      <strong>使い方:</strong><br>
+      1. Meeting IDを入力（自動取得）<br>
+      2. 「接続開始」をクリック<br>
+      3. リーダーから休憩通知が来ると画面に表示<br>
+      4. 休憩が必要な時は「休憩を希望する」ボタンで匿名リクエスト
+    </div>
+  </main>
 
   <script src="config.js"></script>
   <script src="popup.js"></script>

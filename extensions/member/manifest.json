@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Meeting Rest Member",
+  "name": "ひとやすみ通信 - Member",
   "version": "1.0.0",
-  "description": "Google Meet会議中に休憩通知を受信してオーバーレイUIを表示します。",
+  "description": "リモート会議に、やわらかな休憩を。休憩通知を受信してリフレッシュタイムをお知らせ。",
   "permissions": [
     "activeTab",
     "storage"
@@ -13,9 +13,19 @@
     "https://*.up.railway.app/*",
     "https://*.railway.app/*"
   ],
+  "icons": {
+    "16": "image.png",
+    "48": "image.png",
+    "128": "image.png"
+  },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "休憩通知システム - Member"
+    "default_title": "ひとやすみ通信 - Member",
+    "default_icon": {
+      "16": "image.png",
+      "48": "image.png",
+      "128": "image.png"
+    }
   },
   "content_scripts": [
     {
