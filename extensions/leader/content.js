@@ -481,14 +481,22 @@
 
       // 接続完了をPromiseで待つ
       return new Promise((resolve, reject) => {
+        console.log('[Blink Detection] Connecting to:', API_BASE_URL);
         socket = io(API_BASE_URL, {
-          transports: ['polling']  // pollingのみを使用（WebSocketの403エラーを回避）
+          transports: ['polling', 'websocket'],  // polling優先でwebsocketもフォールバック
+          path: '/socket.io/',
+          reconnection: true,
+          reconnectionDelay: 1000,
+          reconnectionDelayMax: 5000,
+          reconnectionAttempts: 5
         });
 
         socket.on('connect', () => {
+          console.log('[Blink Detection] ✓ Socket.IO connected successfully');
           // 会議ルームに参加
           if (meetingId) {
             socket.emit('join_meeting', { meeting_id: meetingId });
+            console.log('[Blink Detection] Joined meeting room:', meetingId);
           }
 
           // 接続完了を通知

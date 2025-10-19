@@ -18,11 +18,13 @@ sio = socketio.AsyncServer(
     async_mode='asgi',
     cors_allowed_origins='*',  # 全てのオリジンを許可
     logger=True,
-    engineio_logger=True
+    engineio_logger=True,
+    ping_timeout=60,
+    ping_interval=25
 )
 
 # Socket.IOをASGIアプリケーションとしてマウント
-socket_app = socketio.ASGIApp(sio, app)
+socket_app = socketio.ASGIApp(sio, other_asgi_app=app, socketio_path='socket.io')
 
 # CORS設定（Chrome拡張機能からのアクセスを許可）
 app.add_middleware(
@@ -72,6 +74,11 @@ async def root():
         "service": "Meeting Rest System API",
         "status": "running",
         "version": "1.0.0",
+        "socketio": {
+            "enabled": True,
+            "path": "/socket.io/",
+            "transports": ["polling", "websocket"]
+        },
         "endpoints": {
             "health": "/health",
             "docs": "/docs",
