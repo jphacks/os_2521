@@ -24,7 +24,7 @@
 
   // まばたき検知の履歴（60秒間トラッキング）
   let blinkHistory = [];
-  const BLINK_THRESHOLD = 10; // 60秒間で10回以下なら休憩フラグ
+  const BLINK_THRESHOLD = 20; // 60秒間で20回以下なら休憩フラグ
 
   // 参加者の巡回用
   let currentParticipantIndex = 0; // 現在検知中の参加者インデックス
@@ -687,8 +687,8 @@
 
     console.log(`[Blink Detection] 📊 60秒間のまばたき回数: ${blinkCount}回 / ${totalRecords}回の検知`);
 
-    // まばたきが閾値以下の場合、休憩フラグを立てる
-    if (blinkCount <= BLINK_THRESHOLD) {
+    // まばたきが閾値以上の場合、休憩フラグを立てる
+    if (blinkCount >= BLINK_THRESHOLD) {
       console.warn(`[Blink Detection] ⚠️ まばたきが少なすぎます（${blinkCount}回）- 休憩を促します`);
       triggerRestBreak();
     } else {
