@@ -20,17 +20,20 @@
   // Socket.IO変数（まばたき検知用）
   let socket = null;
   let blinkDetectionInterval = null;
-  const BLINK_DETECTION_INTERVAL = 2000; // 2秒ごと
+  const BLINK_DETECTION_INTERVAL = 170;
 
-  // まばたき検知の履歴（1分間トラッキング）
+  // まばたき検知の履歴（60秒間トラッキング）
   let blinkHistory = [];
-  const TRACKING_WINDOW = 60000; // 1分間（ミリ秒）
-  const BLINK_THRESHOLD = 1; // 1分間で10回以下なら休憩フラグ
+  const BLINK_THRESHOLD = 10; // 60秒間で10回以下なら休憩フラグ
 
   // 参加者の巡回用
   let currentParticipantIndex = 0; // 現在検知中の参加者インデックス
   let participantRotationInterval = null; // 参加者切り替え用タイマー
-  const PARTICIPANT_ROTATION_INTERVAL = 60000; // 1分ごとに参加者を切り替え
+  const PARTICIPANT_ROTATION_INTERVAL = 60000; // 60秒ごとに参加者を切り替え
+
+  // 定期判定用タイマー
+  let blinkJudgmentInterval = null;
+  const JUDGMENT_INTERVAL = 60000; // 60秒ごとに判定
 
   function* walkShadow(node) {
     yield node;
@@ -508,29 +511,13 @@
         });
 
         socket.on('blink_result', (data) => {
+          // デバッグログ（必要に応じてコメントアウト解除）
           console.log('[Blink Detection] 🔍 まばたき検知結果:', data.blink_detected ? '✓ 検知' : '✗ 未検知');
-          console.log(data.image)
 
           // まばたき検知結果を履歴に追加
-          const now = Date.now();
           blinkHistory.push({
-            detected: data.blink_detected,
-            timestamp: now
+            detected: data.blink_detected
           });
-
-          // 1分以上古いデータを削除
-          blinkHistory = blinkHistory.filter(record => now - record.timestamp <= TRACKING_WINDOW);
-
-          // 1分間のまばたき回数をカウント
-          const blinkCount = blinkHistory.filter(record => record.detected).length;
-
-          // 十分なデータが溜まったら判定（最低30回の記録 = 1分間）
-            // まばたきが10回以下の場合、休憩フラグを立てる
-          if (blinkCount <= BLINK_THRESHOLD) {
-            console.warn(`[Blink Detection] ⚠️ まばたきが少なすぎます（${blinkCount}回）- 休憩を促します`);
-            triggerRestBreak();
-          }
-
         });
 
         socket.on('connect_error', (error) => {
@@ -630,7 +617,7 @@
       return;
     }
 
-    console.log('[Blink Detection] まばたき検知を開始（2秒間隔、1分ごとに参加者を巡回）');
+    console.log('[Blink Detection] まばたき検知を開始（170ms間隔でデータ収集、60秒ごとに判定）');
 
     // 初期化
     currentParticipantIndex = 0;
@@ -639,15 +626,22 @@
     // 即座に1回送信
     captureAndSendBlinkImage();
 
-    // 定期的に送信（2秒ごと）
+    // 定期的に送信（170msごと）
     blinkDetectionInterval = setInterval(() => {
       captureAndSendBlinkImage();
     }, BLINK_DETECTION_INTERVAL);
 
-    // 1分ごとに参加者を切り替え
+    // 定期的に判定（60秒ごと）
+    blinkJudgmentInterval = setInterval(() => {
+      judgeBlinkFrequency();
+    }, JUDGMENT_INTERVAL);
+
+    // 60秒ごとに参加者を切り替え
     participantRotationInterval = setInterval(() => {
       rotateToNextParticipant();
     }, PARTICIPANT_ROTATION_INTERVAL);
+
+    console.log('[Blink Detection] ⏱️ 60秒後に初回判定を実施します');
   }
 
   /**
@@ -660,15 +654,43 @@
       console.log('[Blink Detection] まばたき検知を停止');
     }
 
+    if (blinkJudgmentInterval) {
+      clearInterval(blinkJudgmentInterval);
+      blinkJudgmentInterval = null;
+      console.log('[Blink Detection] 定期判定を停止');
+    }
+
     if (participantRotationInterval) {
       clearInterval(participantRotationInterval);
       participantRotationInterval = null;
-      console.log("-----------------------------------------------------------------------------------------------------------")
+      console.log('[Blink Detection] 参加者ローテーションを停止');
     }
 
     // 状態をリセット
     blinkHistory = [];
     currentParticipantIndex = 0;
+  }
+
+  /**
+   * 60秒ごとにまばたき回数を判定する
+   */
+  function judgeBlinkFrequency() {
+    const blinkCount = blinkHistory.filter(record => record.detected).length;
+    const totalRecords = blinkHistory.length;
+
+    console.log(`[Blink Detection] 📊 60秒間のまばたき回数: ${blinkCount}回 / ${totalRecords}回の検知`);
+
+    // まばたきが閾値以下の場合、休憩フラグを立てる
+    if (blinkCount <= BLINK_THRESHOLD) {
+      console.warn(`[Blink Detection] ⚠️ まばたきが少なすぎます（${blinkCount}回）- 休憩を促します`);
+      triggerRestBreak();
+    } else {
+      console.log(`[Blink Detection] ✓ まばたき回数は正常範囲内です`);
+    }
+
+    // 履歴をリセットして次の60秒間の測定を開始
+    blinkHistory = [];
+    console.log(`[Blink Detection] 🔄 履歴をリセット - 次の60秒間の測定を開始`);
   }
 
   /**
@@ -690,8 +712,6 @@
 
       if (response.ok) {
         console.log('[Blink Detection] ✓ 休憩フラグを立てました');
-        // 履歴をリセットして、連続して休憩通知が出ないようにする
-        blinkHistory = [];
       } else {
         console.error('[Blink Detection] 休憩フラグの設定に失敗:', response.status);
       }

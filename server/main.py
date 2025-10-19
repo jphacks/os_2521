@@ -9,6 +9,10 @@ import os
 import random
 from datetime import datetime
 from typing import AsyncGenerator
+import base64
+import numpy as np
+import cv2
+from is_blink import is_blink
 
 app = FastAPI(title="Meeting Rest System API")
 
@@ -405,7 +409,7 @@ async def leave_meeting(sid, data):
 @sio.event
 async def analyze_blink_image(sid, data):
     """
-    まばたき検知用画像を受信してランダムな結果を返す
+    まばたき検知用画像を受信して実際にまばたき検知を行う
 
     Args:
         sid: クライアントのセッションID
@@ -418,7 +422,7 @@ async def analyze_blink_image(sid, data):
     Returns:
         Socket.IOで 'blink_result' イベントを送信
         {
-            'blink_detected': true/false (ランダム),
+            'blink_detected': true/false,
             'timestamp': 'サーバー側のタイムスタンプ',
             'meeting_id': 'ミーティングID'
         }
@@ -429,8 +433,32 @@ async def analyze_blink_image(sid, data):
 
     print(f"✓ Received blink analysis request from {sid} for meeting {meeting_id}")
 
-    # ランダムにtrue/falseを生成（まばたき検知のモック）
-    blink_detected = random.choice([True, False])
+    # Base64画像をデコードしてOpenCV形式に変換
+    blink_detected = False
+    try:
+        # "data:image/jpeg;base64," のプレフィックスを削除
+        if ',' in image_data:
+            image_data = image_data.split(',')[1]
+
+        # Base64デコード
+        image_bytes = base64.b64decode(image_data)
+
+        # NumPy配列に変換
+        nparr = np.frombuffer(image_bytes, np.uint8)
+
+        # OpenCV形式の画像に変換（BGR）
+        frame_bgr = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+        if frame_bgr is not None:
+            # is_blink関数で実際にまばたき検知
+            blink_detected = is_blink(frame_bgr)
+            print(f"✓ Blink detection result: {blink_detected}")
+        else:
+            print("✗ Failed to decode image")
+    except Exception as e:
+        print(f"✗ Error during blink detection: {e}")
+        # エラー時はFalseを返す
+        blink_detected = False
 
     # 結果を返送
     result = {
